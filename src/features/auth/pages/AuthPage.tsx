@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Bike, Mail, Lock, User, ArrowRight, ShieldCheck, Zap, Users, CheckCircle, Send } from 'lucide-react'
+import { Bike, Mail, Lock, User, ArrowRight, ShieldCheck, Zap, Users, CheckCircle, Send, Sun, Moon } from 'lucide-react'
 import useAuth from '../hooks/useAuth'
+import { useThemeStore } from '@/store/themeStore'
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -11,6 +12,7 @@ export default function AuthPage() {
   const [isVerificationSent, setIsVerificationSent] = useState(false)
   
   const { login, signup, isLoading, error, clearError } = useAuth()
+  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const justVerified = searchParams.get('verified') === 'true'
@@ -44,27 +46,27 @@ export default function AuthPage() {
 
   if (isVerificationSent) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="absolute inset-0 opacity-20 bg-rugged-hero bg-cover bg-center grayscale" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
         
-        <div className="relative z-10 w-full max-w-lg bg-[#0A0A0A] border border-white/5 p-12 space-y-10 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        <div className="relative z-10 w-full max-w-lg bg-background border border-border p-12 space-y-10 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="flex flex-col items-center text-center space-y-6">
             <div className="h-20 w-20 bg-saffron/10 border border-saffron/30 flex items-center justify-center shadow-[0_0_40px_rgba(183,65,14,0.2)]">
               <Send size={40} className="text-saffron animate-pulse" />
             </div>
             <div className="space-y-3">
-              <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Signal Dispatched.</h2>
-              <p className="text-white/40 font-bold max-w-xs mx-auto text-sm leading-relaxed">
+              <h2 className="text-4xl font-black text-foreground italic tracking-tighter uppercase">Signal Dispatched.</h2>
+              <p className="text-muted-foreground font-bold max-w-xs mx-auto text-sm leading-relaxed">
                 We've sent an encrypted verification link to <span className="text-saffron">{email}</span>. Confirm your intel to join the pack.
               </p>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
+          <div className="pt-6 border-t border-border flex flex-col gap-4">
             <button 
               onClick={() => setIsVerificationSent(false)}
-              className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all underline underline-offset-8"
+              className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all underline underline-offset-8"
             >
               Return to Base
             </button>
@@ -75,47 +77,56 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background relative">
+      {/* Absolute Theme Toggle Top Right */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 z-50 p-3 rounded-full bg-muted/80 backdrop-blur-md text-foreground border border-border/50 hover:bg-muted transition-all shadow-xl"
+        title={`Switch to ${theme === 'dark' ? 'Daylight' : 'Asphalt'} mode`}
+      >
+        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+
       {/* Visual Side */}
-      <div className="hidden md:flex md:w-1/2 bg-[#0A0A0A] relative overflow-hidden items-center justify-center p-12">
+      <div className="hidden md:flex md:w-1/2 bg-background relative overflow-hidden items-center justify-center p-12">
         <div className="absolute inset-0 opacity-40 bg-rugged-hero bg-cover bg-center mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-transparent to-saffron/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-transparent to-saffron/20" />
         
-        <div className="relative z-10 space-y-8 max-w-lg">
+          <div className="relative z-10 space-y-8 max-w-lg">
           <div className="flex items-center gap-4 group">
             <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-saffron/30 shadow-2xl group-hover:border-saffron transition-all duration-700">
               <img src="/logo-badge.png" alt="RideSync Logo" className="h-full w-full object-cover" />
             </div>
             <div className="flex flex-col -space-y-1">
-              <span className="text-4xl font-black text-white tracking-[0.1em] uppercase italic">
+              <span className="text-4xl font-black text-foreground tracking-[0.1em] uppercase italic">
                 RIDE<span className="text-saffron">SYNC</span>
               </span>
               <span className="text-xs font-bold text-saffron/60 tracking-[0.4em] uppercase ml-1">EST. 2023 • MC hub</span>
             </div>
           </div>
           
-          <h1 className="text-5xl font-black text-white leading-tight tracking-tight">
+          <h1 className="text-5xl font-black text-foreground leading-tight tracking-tight">
             The ultimate coordination hub for motorcyclists.
           </h1>
           
           <div className="space-y-6">
             <div className="flex gap-4 items-start">
-              <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
+              <div className="h-10 w-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 border border-border">
                 <Zap size={20} className="text-primary" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg">Real-time Coordination</h3>
-                <p className="text-white/60 text-sm font-medium">Synced locations and real-time alerts across your entire group.</p>
+                <h3 className="text-foreground font-bold text-lg">Real-time Coordination</h3>
+                <p className="text-muted-foreground text-sm font-medium">Synced locations and real-time alerts across your entire group.</p>
               </div>
             </div>
             
             <div className="flex gap-4 items-start">
-              <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
+              <div className="h-10 w-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 border border-border">
                 <Users size={20} className="text-primary" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg">Community Driven</h3>
-                <p className="text-white/60 text-sm font-medium">Join thousands of riders in specialized clubs and regional groups.</p>
+                <h3 className="text-foreground font-bold text-lg">Community Driven</h3>
+                <p className="text-muted-foreground text-sm font-medium">Join thousands of riders in specialized clubs and regional groups.</p>
               </div>
             </div>
           </div>

@@ -247,17 +247,22 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
         }
       } catch (error) {
         console.error('OSRM routing failed:', error)
-        // Fallback: straight line with estimated data
+        // Fallback: Aviation / Straight line approximation
         const fallbackCoords = orderedWaypoints.map(p => [p.lat, p.lng] as [number, number])
         let totalDist = 0
         for (let i = 1; i < fallbackCoords.length; i++) {
           totalDist += L.latLng(fallbackCoords[i - 1]).distanceTo(L.latLng(fallbackCoords[i]))
         }
+        
+        // At massive distances, default to a jet estimation (approx 900km/h => 15km/min)
+        // rather than highway driving speeds which don't apply to straight lines across continents.
+        const speedKmMpm = 15
+        
         setRouteOptions([{
           coords: fallbackCoords,
           distance: totalDist,
-          duration: (totalDist / 1000) * 60, // rough estimate: 1 km/min
-          label: 'Direct Path (estimated)',
+          duration: (totalDist / 1000) * 60, // Keep driving estimate duration for UX, assuming 60km/h avg
+          label: 'Direct Aviation Path (Network Limit Exceeded)',
         }])
         setSelectedRouteIndex(0)
       } finally {

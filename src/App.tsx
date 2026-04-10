@@ -10,9 +10,18 @@ import AuthPage from '@/features/auth/pages/AuthPage'
 import AuthCallbackPage from '@/features/auth/pages/AuthCallbackPage'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useThemeStore } from '@/store/themeStore'
+import { useEffect } from 'react'
 
 function App() {
   const { isInitialized } = useAuth()
+  const { theme } = useThemeStore()
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    root.classList.remove('light', 'dark')
+    root.classList.add(theme)
+  }, [theme])
 
   if (!isInitialized) {
     return (

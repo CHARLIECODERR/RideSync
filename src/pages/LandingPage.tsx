@@ -11,7 +11,7 @@ export default function LandingPage() {
   const { user } = useAuth()
 
   return (
-    <div className="min-h-screen bg-indigo-royal text-white overflow-hidden selection:bg-saffron/50 font-sans">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-saffron/50 font-sans">
       <LandingNavbar />
 
       {/* Hero Section */}
@@ -34,7 +34,7 @@ export default function LandingPage() {
           </div>
           
           <div className="flex flex-col md:flex-row items-end justify-between gap-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-            <p className="text-xl md:text-2xl text-white/50 font-bold max-w-xl leading-snug border-l-4 border-saffron pl-8">
+            <p className="text-xl md:text-2xl text-muted-foreground font-bold max-w-xl leading-snug border-l-4 border-saffron pl-8">
               The ultimate community hub for the Indian rider. No GPS tracking, just sheer coordination, safety, and the spirit of the long road.
             </p>
 
@@ -61,23 +61,23 @@ export default function LandingPage() {
       </section>
 
       {/* Philosophy Section */}
-      <section className="py-40 bg-black relative border-y border-white/5">
+      <section className="py-40 bg-background relative border-y border-border/50">
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
         <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-20 relative z-10">
           <div className="space-y-6">
             <div className="text-saffron font-black text-6xl italic underline decoration-8 underline-offset-8">01.</div>
             <h3 className="text-3xl font-black uppercase tracking-tighter">No Lone Wolves</h3>
-            <p className="text-white/40 font-bold leading-relaxed">We ride together or not at all. Sync with groups that match your bike and your pace.</p>
+            <p className="text-muted-foreground font-bold leading-relaxed">We ride together or not at all. Sync with groups that match your bike and your pace.</p>
           </div>
           <div className="space-y-6">
             <div className="text-saffron font-black text-6xl italic underline decoration-8 underline-offset-8">02.</div>
             <h3 className="text-3xl font-black uppercase tracking-tighter">Respect the Build</h3>
-            <p className="text-white/40 font-bold leading-relaxed">From vintage restaurations to modern beasts, every rider finds their place in the RideSync hierarchy.</p>
+            <p className="text-muted-foreground font-bold leading-relaxed">From vintage restaurations to modern beasts, every rider finds their place in the RideSync hierarchy.</p>
           </div>
           <div className="space-y-6">
             <div className="text-saffron font-black text-6xl italic underline decoration-8 underline-offset-8">03.</div>
             <h3 className="text-3xl font-black uppercase tracking-tighter">Asphalt Ethics</h3>
-            <p className="text-white/40 font-bold leading-relaxed">Safety isn't an option. It's the law of the road. Mechanical support and SOS are built into our DNA.</p>
+            <p className="text-muted-foreground font-bold leading-relaxed">Safety isn't an option. It's the law of the road. Mechanical support and SOS are built into our DNA.</p>
           </div>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 space-y-20">
           <div className="max-w-4xl space-y-6">
             <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-none">The <span className="text-saffron">Tribe</span> Arsenal.</h2>
-            <p className="text-2xl text-white/40 font-bold">Built for the mechanical soul. Tools that don't get in the way of the wind.</p>
+            <p className="text-2xl text-muted-foreground font-bold">Built for the mechanical soul. Tools that don't get in the way of the wind.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -99,11 +99,11 @@ export default function LandingPage() {
               { icon: <Zap size={32} />, title: "Real-time Pings", desc: "Instant alerts for road hazards, police checkpoints, and hidden gems." },
               { icon: <Calendar size={32} />, title: "Club Events", desc: "Coordinate meetups, anniversary rides, and long-haul expeditions with ease." }
             ].map((f, i) => (
-              <div key={i} className="p-12 bg-zinc-900 border border-white/5 hover:bg-zinc-800 hover:border-saffron/30 transition-all group relative overflow-hidden">
+              <div key={i} className="p-12 bg-muted/30 border border-border/50 hover:bg-muted/50 hover:border-saffron/30 transition-all group relative overflow-hidden">
                 <div className="relative z-10 space-y-6">
                   <div className="text-saffron group-hover:scale-110 transition-transform duration-500">{f.icon}</div>
                   <h3 className="text-2xl font-black uppercase tracking-tighter">{f.title}</h3>
-                  <p className="text-white/40 font-bold text-sm leading-relaxed">{f.desc}</p>
+                  <p className="text-muted-foreground font-bold text-sm leading-relaxed">{f.desc}</p>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                    <div className="text-8xl font-black italic">{i + 1}</div>
@@ -134,18 +134,18 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-24 bg-zinc-950 border-t border-white/5">
+      <footer className="py-24 bg-background border-t border-border/50">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-start justify-between gap-16">
           <div className="space-y-6">
             <div className="flex items-center gap-4 group">
-               <div className="h-12 w-12 overflow-hidden rounded-full border border-white/10 group-hover:border-saffron/50 transition-all duration-700">
+               <div className="h-12 w-12 overflow-hidden rounded-full border border-border/50 group-hover:border-saffron/50 transition-all duration-700">
                 <img src="/logo-badge.png" alt="RideSync" className="h-full w-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" />
               </div>
-              <span className="text-2xl font-black tracking-widest text-white uppercase italic">
+              <span className="text-2xl font-black tracking-widest text-foreground uppercase italic">
                 RIDE<span className="text-saffron">SYNC</span>
               </span>
             </div>
-            <p className="text-white/20 text-xs font-bold uppercase tracking-[0.3em] max-w-xs leading-loose">
+            <p className="text-muted-foreground text-xs font-bold uppercase tracking-[0.3em] max-w-xs leading-loose">
               Dedicated to the riders of Bharat. Built on asphalt, fueled by brotherhood. EST 2023.
             </p>
           </div>
@@ -153,18 +153,18 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-20">
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-saffron">The Hub</h4>
-              <ul className="space-y-4 text-xs font-bold text-white/40 uppercase tracking-widest">
-                <li><a href="#" className="hover:text-white">Active Rides</a></li>
-                <li><a href="#" className="hover:text-white">Find a Club</a></li>
-                <li><a href="#" className="hover:text-white">The Garage</a></li>
+              <ul className="space-y-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                <li><a href="#" className="hover:text-foreground">Active Rides</a></li>
+                <li><a href="#" className="hover:text-foreground">Find a Club</a></li>
+                <li><a href="#" className="hover:text-foreground">The Garage</a></li>
               </ul>
             </div>
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-saffron">Legal</h4>
-              <ul className="space-y-4 text-xs font-bold text-white/40 uppercase tracking-widest">
-                <li><a href="#" className="hover:text-white">Asphalt Code</a></li>
-                <li><a href="#" className="hover:text-white">Privacy</a></li>
-                <li><a href="#" className="hover:text-white">Terms</a></li>
+              <ul className="space-y-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                <li><a href="#" className="hover:text-foreground">Asphalt Code</a></li>
+                <li><a href="#" className="hover:text-foreground">Privacy</a></li>
+                <li><a href="#" className="hover:text-foreground">Terms</a></li>
               </ul>
             </div>
           </div>
