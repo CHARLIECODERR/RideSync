@@ -1,0 +1,137 @@
+.create-ride-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 800px;
+}
+
+.create-ride-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.form-section {
+  padding: var(--space-8);
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+  color: var(--color-primary-light);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+
+.form-span-2 {
+  grid-column: span 2;
+}
+
+/* Route visual */
+.route-points {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--space-4);
+}
+
+.route-point {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  position: relative;
+}
+
+.route-point-marker {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.route-point-start {
+  background: var(--color-success);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.route-point-end {
+  background: var(--color-danger);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+.route-point-waypoint {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 0 12px var(--color-primary-glow);
+}
+
+.route-point-fields {
+  flex: 1;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.route-line {
+  width: 2px;
+  height: 24px;
+  background: var(--border-primary);
+  margin-left: 13px;
+  position: relative;
+}
+
+.route-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--color-primary-glow), transparent);
+}
+
+.stop-type-select {
+  max-width: 120px;
+}
+
+.add-stop-btn {
+  margin-left: 40px;
+  align-self: flex-start;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-span-2 {
+    grid-column: span 1;
+  }
+
+  .route-point-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stop-type-select {
+    max-width: 100%;
+  }
+}

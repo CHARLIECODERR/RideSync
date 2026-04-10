@@ -1,0 +1,218 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Hero */
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-8);
+  background: var(--gradient-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.dashboard-hero-content h1 {
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-2);
+}
+
+.dashboard-hero-content p {
+  color: var(--text-secondary);
+  font-size: var(--fs-base);
+}
+
+.dashboard-hero-actions {
+  display: flex;
+  gap: var(--space-3);
+  z-index: 1;
+}
+
+/* Section */
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-section-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Live dot */
+.live-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-success);
+  position: relative;
+}
+
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.live-dot-sm {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Ride Card */
+.ride-card {
+  position: relative;
+}
+
+.ride-card-active {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.ride-card-active:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.ride-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.ride-card-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.ride-card-name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-1);
+}
+
+.ride-card-community {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.ride-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.ride-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ride-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-success-light);
+}
+
+/* Community mini card */
+.community-mini-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.community-mini-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: var(--fs-lg);
+  color: white;
+}
+
+.community-mini-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.community-mini-info h4 {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.community-mini-info p {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--space-6);
+  }
+
+  .dashboard-hero-content h1 {
+    font-size: var(--fs-2xl);
+  }
+}
