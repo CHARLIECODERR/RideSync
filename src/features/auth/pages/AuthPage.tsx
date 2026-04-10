@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Bike, Mail, Lock, User, ArrowRight, ShieldCheck, Zap, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Bike, Mail, Lock, User, ArrowRight, ShieldCheck, Zap, Users, CheckCircle, Send } from 'lucide-react'
 import useAuth from '../hooks/useAuth'
 
 export default function AuthPage() {
@@ -8,9 +8,18 @@ export default function AuthPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [isVerificationSent, setIsVerificationSent] = useState(false)
   
   const { login, signup, isLoading, error, clearError } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const justVerified = searchParams.get('verified') === 'true'
+
+  useEffect(() => {
+    if (justVerified) {
+      setIsLogin(true)
+    }
+  }, [justVerified])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,37 +31,71 @@ export default function AuthPage() {
     } else {
       const success = await signup(name, email, password)
       if (success) {
-        // Subapase might require email confirmation.
-        // For simplicity, we navigate to dashboard, but real apps might show "Check Email"
-        navigate('/dashboard')
+        setIsVerificationSent(true)
       }
     }
   }
 
   const toggleAuth = () => {
     setIsLogin(!isLogin)
+    setIsVerificationSent(false)
     clearError()
+  }
+
+  if (isVerificationSent) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6">
+        <div className="absolute inset-0 opacity-20 bg-rugged-hero bg-cover bg-center grayscale" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+        
+        <div className="relative z-10 w-full max-w-lg bg-[#0A0A0A] border border-white/5 p-12 space-y-10 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="h-20 w-20 bg-saffron/10 border border-saffron/30 flex items-center justify-center shadow-[0_0_40px_rgba(183,65,14,0.2)]">
+              <Send size={40} className="text-saffron animate-pulse" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Signal Dispatched.</h2>
+              <p className="text-white/40 font-bold max-w-xs mx-auto text-sm leading-relaxed">
+                We've sent an encrypted verification link to <span className="text-saffron">{email}</span>. Confirm your intel to join the pack.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
+            <button 
+              onClick={() => setIsVerificationSent(false)}
+              className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all underline underline-offset-8"
+            >
+              Return to Base
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Visual Side */}
-      <div className="hidden md:flex md:w-1/2 bg-slate-900 relative overflow-hidden items-center justify-center p-12">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-primary rounded-full -translate-x-1/2 -translate-y-1/2 blur-[100px]" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500 rounded-full translate-x-1/3 translate-y-1/3 blur-[120px]" />
-        </div>
+      <div className="hidden md:flex md:w-1/2 bg-[#0A0A0A] relative overflow-hidden items-center justify-center p-12">
+        <div className="absolute inset-0 opacity-40 bg-rugged-hero bg-cover bg-center mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-transparent to-saffron/20" />
         
         <div className="relative z-10 space-y-8 max-w-lg">
-          <div className="flex items-center gap-3">
-            <div className="h-14 w-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-2xl">
-              <Bike size={32} />
+          <div className="flex items-center gap-4 group">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-saffron/30 shadow-2xl group-hover:border-saffron transition-all duration-700">
+              <img src="/logo-badge.png" alt="RideSync Logo" className="h-full w-full object-cover" />
             </div>
-            <span className="text-4xl font-black text-white tracking-tighter">RideSync</span>
+            <div className="flex flex-col -space-y-1">
+              <span className="text-4xl font-black text-white tracking-[0.1em] uppercase italic">
+                RIDE<span className="text-saffron">SYNC</span>
+              </span>
+              <span className="text-xs font-bold text-saffron/60 tracking-[0.4em] uppercase ml-1">EST. 2023 • MC hub</span>
+            </div>
           </div>
           
           <h1 className="text-5xl font-black text-white leading-tight tracking-tight">
-            The ultimate coordiantion hub for motorcyclists.
+            The ultimate coordination hub for motorcyclists.
           </h1>
           
           <div className="space-y-6">
@@ -94,6 +137,17 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6 md:p-12 lg:p-20">
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-3">
+            {justVerified && (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <CheckCircle size={20} />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest">Intel Verified</p>
+                  <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest leading-none mt-1">Your credentials are established. Sign in to start the mission.</p>
+                </div>
+              </div>
+            )}
             <h2 className="text-4xl font-black tracking-tight">
               {isLogin ? 'Welcome back' : 'Create account'}
             </h2>

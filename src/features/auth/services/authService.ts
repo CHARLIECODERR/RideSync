@@ -14,10 +14,10 @@ export const authService = {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) throw error
-    return data as Profile
+    return data as Profile | null
   },
 
   async updateProfile(profile: Partial<Profile> & { id: string }) {

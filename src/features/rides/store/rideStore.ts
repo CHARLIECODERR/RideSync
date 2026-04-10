@@ -1,9 +1,11 @@
 import { create } from 'zustand'
-import { mockRides, mockParticipants, mockAlerts, generateRideCode } from '@/lib/mockData'
+import { rideService, RideRoute, RideStop, Ride as ServiceRide } from '../services/rideService'
+import { mockRides, mockParticipants, mockAlerts } from '@/lib/mockData'
 
 export interface Ride {
   id: string
   name: string
+  description?: string
   status: 'Active' | 'Planned' | 'Completed' | 'Draft'
   ride_code: string
   participants: number
@@ -14,7 +16,7 @@ export interface Ride {
   estimated_duration: string
   start_time: string
   end_time?: string
-  stops?: import('@/lib/mockData').Stop[]
+  stops?: any[]
   created_at?: string
 }
 
@@ -42,9 +44,9 @@ interface RideState {
   participants: Participant[]
   alerts: RideAlert[]
   isLoading: boolean
-  locationSimInterval: any // ReturnType<typeof setInterval> | null
+  locationSimInterval: any
   fetchRides: () => Promise<void>
-  createRide: (rideData: Partial<Ride>) => Promise<Ride>
+  createRide: (rideData: Partial<Ride>, routeData: RideRoute, stops: RideStop[]) => Promise<Ride>
   getRide: (id: string) => Ride | undefined
   setActiveRide: (ride: Ride | null) => void
   startRide: (rideId: string) => void
@@ -66,37 +68,47 @@ const useRideStore = create<RideState>((set, get) => ({
 
   fetchRides: async () => {
     set({ isLoading: true })
+    // In a real app, this would fetch from Supabase
     await new Promise(resolve => setTimeout(resolve, 600))
     set({ isLoading: false })
   },
 
-  createRide: async (rideData) => {
+  createRide: async (rideData, routeData, stops) => {
     set({ isLoading: true })
-    await new Promise(resolve => setTimeout(resolve, 800))
+    try {
+      // Align types for service call
+      const serviceRideData: Partial<ServiceRide> = {
+        name: rideData.name,
+        description: rideData.description,
+        community_id: rideData.community_id,
+        start_time: rideData.start_time,
+        max_participants: rideData.max_participants,
+        status: rideData.status as ServiceRide['status']
+      }
 
-    const newRide: Ride = {
-      id: 'ride-' + Date.now(),
-      name: rideData.name || 'New Ride',
-      status: 'Planned',
-      ride_code: generateRideCode(rideData.community_name?.substring(0, 3).toUpperCase() || 'RS'),
-      participants: 1,
-      max_participants: rideData.max_participants || 15,
-      community_name: rideData.community_name || 'General',
-      community_id: rideData.community_id || 'comm-1',
-      distance: rideData.distance || '0 km',
-      estimated_duration: rideData.estimated_duration || '0h',
-      start_time: rideData.start_time || new Date().toISOString(),
-      stops: rideData.stops || [],
-      created_at: new Date().toISOString(),
-      ...rideData,
+      const dbRide = await rideService.createRide(serviceRideData, routeData, stops)
+      
+      // Transform ServiceRide back to UI Ride
+      const newRide: Ride = {
+        ...dbRide,
+        participants: 1, 
+        community_name: 'HQ', 
+        distance: '0.0 km', 
+        estimated_duration: '0 mins',
+        status: dbRide.status
+      }
+
+      set((state) => ({
+        rides: [newRide, ...state.rides],
+        isLoading: false,
+      }))
+
+      return newRide
+    } catch (error) {
+      console.error('Failed to create ride', error)
+      set({ isLoading: false })
+      throw error
     }
-
-    set((state) => ({
-      rides: [newRide, ...state.rides],
-      isLoading: false,
-    }))
-
-    return newRide
   },
 
   getRide: (id) => {
@@ -114,7 +126,6 @@ const useRideStore = create<RideState>((set, get) => ({
       ),
     }))
 
-    // Start simulating location updates
     const interval = setInterval(() => {
       set((state) => ({
         participants: state.participants.map(p => {

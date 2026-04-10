@@ -1,15 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Route, Plus, LogOut,
-  Bike, Compass, User, ChevronLeft, ChevronRight
+  Bike, Compass, User, ChevronLeft, ChevronRight,
+  Sun, Moon
 } from 'lucide-react'
 import { useState } from 'react'
 import useAuthStore from '@/features/auth/store/authStore'
 import { cn } from '@/lib/utils'
+import { useThemeStore } from '@/store/themeStore'
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { user, logout } = useAuthStore()
+  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -71,6 +74,18 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 border-t mt-auto">
+        <button
+          onClick={toggleTheme}
+          className={cn(
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all mb-2",
+            collapsed && "justify-center"
+          )}
+          title={theme === 'dark' ? "Light Mode" : "Dark Mode"}
+        >
+          {theme === 'dark' ? <Sun size={20} className="min-w-[20px]" /> : <Moon size={20} className="min-w-[20px]" />}
+          {!collapsed && <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+        </button>
+
         {!collapsed && user && (
           <div className="flex items-center gap-3 p-2 rounded-xl bg-muted/50 mb-3 border border-border/50">
             <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold border border-primary/20 shrink-0">

@@ -3,16 +3,44 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-indigo-royal: hsl(var(--indigo-royal));
+  --color-saffron: hsl(var(--saffron-vibrant));
+  --color-gold: hsl(var(--gold-heritage));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
+  --card: 0 0% 98%;
   --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
+  --primary: 20 85% 45%; /* Saffron */
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -24,30 +52,35 @@
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --ring: 20 85% 45%;
+  --radius: 1.5rem;
+
+  --indigo-royal: 222 10% 8%;
+  --saffron-vibrant: 20 85% 45%;
+  --gold-heritage: 40 40% 60%;
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+
+  --card: 224 71% 7%;
+  --card-foreground: 213 31% 91%;
+  --popover: 224 71% 4%;
+  --popover-foreground: 213 31% 91%;
+  --primary: 20 85% 55%;
+  --primary-foreground: 224 71% 4%;
+  --secondary: 215 27.9% 16.9%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 56.9%;
+  --accent: 216 34% 17%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+  --ring: 20 85% 55%;
 }
 
 @layer base {
@@ -56,5 +89,27 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-rugged-hero {
+    background-image: linear-gradient(to bottom, rgba(18, 18, 18, 0.3), rgba(18, 18, 18, 0.95)), url('/hero-rugged.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .shadow-rugged {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .border-rugged {
+    @apply border border-white/5;
   }
 }

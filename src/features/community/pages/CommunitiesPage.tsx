@@ -1,117 +1,200 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Search, Plus, MapPin, Globe, Shield, ArrowRight } from 'lucide-react'
-import useCommunityStore, { Community } from '@/features/community/store/communityStore'
+import { Users, Search, Plus, Globe, ArrowRight, Shield, X, Zap } from 'lucide-react'
+import useCommunityStore from '../store/communityStore'
 import { cn } from '@/lib/utils'
 
 export default function CommunitiesPage() {
-  const { communities, isLoading } = useCommunityStore()
+  const { communities, isLoading, fetchCommunities, createCommunity } = useCommunityStore()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newDesc, setNewDesc] = useState('')
+
+  useEffect(() => {
+    fetchCommunities()
+  }, [fetchCommunities])
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const community = await createCommunity(newName, newDesc)
+    if (community) {
+      setIsCreateOpen(false)
+      setNewName('')
+      setNewDesc('')
+      navigate(`/communities/${community.id}`)
+    }
+  }
 
   const filtered = communities.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
+    c.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-            <Users size={36} className="text-primary" />
-            Communities
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 selection:bg-saffron/30">
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-8 border-b border-white/10">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-saffron/10 border border-saffron/20 text-saffron text-[10px] font-black uppercase tracking-[0.3em] italic">
+            <Zap size={12} /> The Global Garage
+          </div>
+          <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase italic leading-none">
+            The <span className="text-saffron">Clubs.</span>
           </h1>
-          <p className="text-muted-foreground text-lg">Connect with local riders and join active clubs.</p>
+          <p className="text-white/40 text-xl font-bold max-w-xl">Find your tribe. Join a legacy or establish your own brotherhood on the asphalt.</p>
         </div>
+        
         <button 
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          onClick={() => setIsCreateOpen(true)}
+          className="group relative flex items-center gap-4 px-8 py-5 bg-saffron text-white font-black uppercase tracking-tighter hover:bg-orange-600 transition-all skew-x-[-15deg] shadow-2xl shadow-saffron/20"
         >
-          <Plus size={20} />
-          Create Community
+          <div className="skew-x-[15deg] flex items-center gap-2">
+            <Plus size={20} /> Establish Club
+          </div>
         </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="relative group">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
+      {/* Search Bar - Rugged Style */}
+      <div className="relative group max-w-2xl">
+        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+          <Search className="text-white/20 group-focus-within:text-saffron transition-colors" size={24} />
+        </div>
         <input 
           type="text"
-          className="w-full pl-16 pr-6 py-5 rounded-3xl bg-card border border-border focus:border-primary shadow-sm outline-none font-medium transition-all"
-          placeholder="Search by name, location, or riding style (e.g. Cruiser, Adventure)..."
+          className="w-full pl-16 pr-8 py-6 bg-zinc-900/50 border-2 border-white/5 focus:border-saffron/50 outline-none font-black uppercase tracking-widest text-lg transition-all placeholder:text-white/10 italic"
+          placeholder="SEARCH BY CLUB NAME OR VIBE..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 border border-white/10 text-[10px] font-black text-white/20 tracking-widest">
+          {filtered.length} RESULTS
+        </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-        {filtered.map(comm => (
-          <div 
-            key={comm.id}
-            className="group relative flex flex-col bg-card border rounded-[2rem] overflow-hidden hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer"
-            onClick={() => navigate(`/communities/${comm.id}`)}
-          >
-            {/* Header/Image placeholder */}
-            <div className="h-32 bg-gradient-to-br from-primary/20 to-blue-500/10 relative">
-              <div className="absolute top-4 right-4">
-                <span className={cn(
-                  "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm",
-                  comm.role === 'Admin' ? "bg-primary text-primary-foreground" : "bg-white text-slate-900"
-                )}>
-                  {comm.role === 'Admin' && <Shield size={10} />}
-                  {comm.role}
-                </span>
-              </div>
-              <div className="absolute -bottom-6 left-6">
-                <div className="h-16 w-16 rounded-2xl bg-white shadow-xl shadow-primary/10 border-4 border-card flex items-center justify-center text-2xl font-black text-primary group-hover:scale-110 transition-transform">
+      {/* Community Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-[400px] bg-zinc-900/50 animate-pulse border border-white/5" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 bg-white/5 p-[1px]">
+          {filtered.map(comm => (
+            <div 
+              key={comm.id}
+              className="group relative h-[400px] bg-black overflow-hidden cursor-pointer flex flex-col justify-end p-10 transition-all"
+              onClick={() => navigate(`/communities/${comm.id}`)}
+            >
+              {/* Background Glow */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
+              <div className="absolute inset-0 bg-zinc-900 opacity-0 group-hover:opacity-40 transition-opacity duration-700" />
+              
+              {/* Card Content */}
+              <div className="relative z-20 space-y-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                <div className="h-16 w-16 bg-white/5 border border-white/10 flex items-center justify-center text-3xl font-black text-saffron italic group-hover:bg-saffron group-hover:text-white transition-all duration-500 shadow-2xl">
                   {comm.name.charAt(0)}
                 </div>
-              </div>
-            </div>
-
-            <div className="p-8 pt-10 flex-1 flex flex-col space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black tracking-tight group-hover:text-primary transition-colors">{comm.name}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 font-medium">
-                  {comm.description || "A passionate group of riders exploring routes and sharing adventures."}
+                <div className="space-y-1">
+                  <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">{comm.name}</h3>
+                  <div className="flex items-center gap-3 text-white/40 text-[10px] font-black tracking-[0.2em] uppercase">
+                    <span>{comm.members_count || 0} RIDERS</span>
+                    <span className="h-1 w-1 rounded-full bg-saffron" />
+                    <span>{comm.rides_count || 0} EXPEDITIONS</span>
+                  </div>
+                </div>
+                <p className="text-sm text-white/40 font-bold line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 leading-relaxed">
+                  {comm.description || "A dedicated brotherhood forged on the long roads of Bharat."}
                 </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {comm.tags?.map(tag => (
-                  <span key={tag} className="px-2 py-0.5 rounded-lg bg-muted text-[10px] font-bold text-muted-foreground">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t mt-auto flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground">
-                  <div className="flex items-center gap-1"><Users size={14} className="text-primary" /> {comm.members}</div>
-                  <div className="flex items-center gap-1"><Plus size={14} className="text-primary" /> {comm.rides} Rides</div>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                  <ArrowRight size={16} />
+                <div className="pt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200">
+                  <div className="inline-flex items-center gap-2 text-saffron text-xs font-black uppercase tracking-widest italic group/link">
+                    Enter Headquarters <ArrowRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
+                  </div>
                 </div>
               </div>
+
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/5 to-transparent rotate-45 translate-x-12 -translate-y-12" />
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filtered.length === 0 && (
-        <div className="py-20 flex flex-col items-center text-center space-y-6 bg-muted/20 border-2 border-dashed rounded-[3rem]">
-          <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+      {/* Empty State */}
+      {!isLoading && filtered.length === 0 && (
+        <div className="py-24 flex flex-col items-center text-center space-y-8 border-2 border-white/5 border-dashed">
+          <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center text-white/20">
             <Globe size={40} />
           </div>
-          <div className="space-y-1">
-            <h3 className="text-2xl font-black">No communities found</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto">Try searching for something else or start your own riding club!</p>
+          <div className="space-y-2">
+            <h3 className="text-3xl font-black uppercase italic tracking-tighter">No Clubs Found</h3>
+            <p className="text-white/40 font-bold max-w-xs mx-auto">The road is empty. Start your own legacy and lead the pack.</p>
           </div>
-          <button className="px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20">
-            Start a New Community
+          <button 
+            onClick={() => setIsCreateOpen(true)}
+            className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest transition-all"
+          >
+            Establish New Club
           </button>
+        </div>
+      )}
+
+      {/* Create Modal - Custom Rugged */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-black/80 animate-in fade-in duration-300">
+          <div className="w-full max-w-xl bg-zinc-950 border border-saffron/30 shadow-[0_30px_100px_-20px_rgba(183,65,14,0.3)] relative overflow-hidden">
+            {/* Texture Overlay */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+            
+            <div className="p-12 space-y-10 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-4xl font-black uppercase tracking-tighter italic">Establish <span className="text-saffron">Club.</span></h2>
+                  <p className="text-white/40 text-sm font-bold uppercase tracking-widest">Define your brotherhood's legacy.</p>
+                </div>
+                <button 
+                  onClick={() => setIsCreateOpen(false)}
+                  className="p-2 hover:bg-white/5 text-white/20 hover:text-white transition-all"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-saffron uppercase tracking-[0.4em] ml-1">Club Name</label>
+                  <input 
+                    type="text"
+                    required
+                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-black uppercase tracking-widest text-xl italic transition-all placeholder:text-white/5"
+                    placeholder="E.G. RAJASTHAN RANGERS"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-saffron uppercase tracking-[0.4em] ml-1">The Creed (Description)</label>
+                  <textarea 
+                    rows={4}
+                    required
+                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-bold text-sm tracking-wide transition-all placeholder:text-white/5 resize-none leading-relaxed"
+                    placeholder="Tell us what your brotherhood stands for. Who do you ride for? What roads do you own?"
+                    value={newDesc}
+                    onChange={e => setNewDesc(e.target.value)}
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full py-6 bg-saffron text-white font-black text-xl uppercase tracking-tighter hover:bg-orange-600 transition-all flex items-center justify-center gap-3 group shadow-2xl shadow-saffron/20"
+                >
+                  Forging The Club <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -35,10 +35,21 @@ const useAuthStore = create<AuthState>((set, get) => ({
     
     if (session?.user) {
       try {
-        const profile = await authService.getProfile(session.user.id)
+        let profile = await authService.getProfile(session.user.id)
+        
+        // Lazy create profile if missing
+        if (!profile) {
+          console.log('Repairing missing profile for user:', session.user.id)
+          profile = await authService.createProfile(
+            session.user.id, 
+            session.user.user_metadata?.full_name || 'Rider', 
+            session.user.email || ''
+          )
+        }
+        
         set({ user: profile, isAuthenticated: true })
       } catch (e) {
-        console.error('Failed to fetch profile during init', e)
+        console.error('Failed to sync profile during init', e)
       }
     }
 
@@ -51,7 +62,17 @@ const useAuthStore = create<AuthState>((set, get) => ({
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
           try {
-            const profile = await authService.getProfile(session.user.id)
+            let profile = await authService.getProfile(session.user.id)
+            
+            // Lazy create profile if missing
+            if (!profile) {
+              profile = await authService.createProfile(
+                session.user.id, 
+                session.user.user_metadata?.full_name || 'Rider', 
+                session.user.email || ''
+              )
+            }
+            
             set({ user: profile, isAuthenticated: true, isLoading: false })
           } catch (e) {
             console.error('Failed to sync profile', e)
@@ -80,11 +101,21 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
     if (data.user) {
       try {
-        const profile = await authService.getProfile(data.user.id)
+        let profile = await authService.getProfile(data.user.id)
+        
+        // Lazy create profile if missing during login
+        if (!profile) {
+          profile = await authService.createProfile(
+            data.user.id, 
+            data.user.user_metadata?.full_name || 'Rider', 
+            data.user.email || ''
+          )
+        }
+        
         set({ user: profile, isAuthenticated: true, isLoading: false })
         return true
       } catch (e) {
-        set({ error: 'Failed to load user profile', isLoading: false })
+        set({ error: 'Failed to sync user credentials. Please try again.', isLoading: false })
         return false
       }
     }

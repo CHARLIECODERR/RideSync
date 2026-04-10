@@ -1,73 +1,121 @@
 import { create } from 'zustand'
-import { mockCommunities } from '@/lib/mockData'
-
-export interface Community {
-  id: string
-  name: string
-  description?: string
-  members: number
-  rides: number
-  role?: 'Admin' | 'Arranger' | 'Rider'
-  created_by?: string
-  created_at?: string
-  tags?: string[]
-}
+import { supabase } from '@/lib/supabase'
+import { communityService, Community, CommunityMember } from '../services/communityService'
 
 interface CommunityState {
   communities: Community[]
+  activeCommunity: Community | null
+  activeMembers: CommunityMember[]
+  userRole: 'Admin' | 'Arranger' | 'Rider' | null
   isLoading: boolean
+  error: string | null
+
+  // Actions
   fetchCommunities: () => Promise<void>
-  createCommunity: (communityData: Partial<Community>) => Promise<Community>
-  joinCommunity: (communityId: string) => Promise<void>
-  getCommunity: (id: string) => Community | undefined
+  loadCommunity: (id: string) => Promise<void>
+  createCommunity: (name: string, description: string) => Promise<Community | null>
+  joinCommunity: (id: string) => Promise<void>
+  leaveCommunity: (id: string) => Promise<void>
+  updateMemberRole: (userId: string, role: 'Admin' | 'Arranger' | 'Rider') => Promise<void>
+  
+  // Helpers
+  isAdmin: () => boolean
+  isArranger: () => boolean
 }
 
 const useCommunityStore = create<CommunityState>((set, get) => ({
-  communities: [...mockCommunities] as Community[],
+  communities: [],
+  activeCommunity: null,
+  activeMembers: [],
+  userRole: null,
   isLoading: false,
+  error: null,
 
   fetchCommunities: async () => {
-    set({ isLoading: true })
-    await new Promise(resolve => setTimeout(resolve, 600))
-    set({ isLoading: false })
-  },
-
-  createCommunity: async (communityData) => {
-    set({ isLoading: true })
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    const newCommunity: Community = {
-      id: 'comm-' + Date.now(),
-      name: communityData.name || 'New Community',
-      members: 1,
-      rides: 0,
-      role: 'Admin',
-      created_by: 'user-1',
-      created_at: new Date().toISOString(),
-      tags: communityData.tags || [],
-      ...communityData,
+    set({ isLoading: true, error: null })
+    try {
+      const communities = await communityService.listCommunities()
+      set({ communities, isLoading: false })
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false })
     }
-
-    set((state) => ({
-      communities: [newCommunity, ...state.communities],
-      isLoading: false,
-    }))
-
-    return newCommunity
   },
 
-  joinCommunity: async (communityId) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    set((state) => ({
-      communities: state.communities.map(c =>
-        c.id === communityId ? { ...c, members: c.members + 1, role: 'Rider' } : c
-      ),
-    }))
+  loadCommunity: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      const [community, members, role] = await Promise.all([
+        communityService.getCommunity(id),
+        communityService.getMembers(id),
+        communityService.getMyRole(id)
+      ])
+      set({ 
+        activeCommunity: community, 
+        activeMembers: members, 
+        userRole: role,
+        isLoading: false 
+      })
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false })
+    }
   },
 
-  getCommunity: (id) => {
-    return get().communities.find(c => c.id === id)
+  createCommunity: async (name, description) => {
+    set({ isLoading: true, error: null })
+    try {
+      const community = await communityService.createCommunity(name, description)
+      set((state) => ({ 
+        communities: [community, ...state.communities], 
+        isLoading: false 
+      }))
+      return community
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false })
+      return null
+    }
   },
+
+  joinCommunity: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Unauthorized')
+
+      await communityService.addMember(id, userData.user.id, 'Rider')
+      await get().loadCommunity(id)
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false })
+    }
+  },
+
+  leaveCommunity: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      await communityService.leaveCommunity(id)
+      await get().loadCommunity(id)
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false })
+    }
+  },
+
+  updateMemberRole: async (userId, role) => {
+    const { activeCommunity } = get()
+    if (!activeCommunity) return
+
+    try {
+      await communityService.updateMemberRole(activeCommunity.id, userId, role)
+      set((state) => ({
+        activeMembers: state.activeMembers.map(m => 
+          m.user_id === userId ? { ...m, role } : m
+        )
+      }))
+    } catch (e: any) {
+      set({ error: e.message })
+    }
+  },
+
+  isAdmin: () => get().userRole === 'Admin',
+  isArranger: () => get().userRole === 'Arranger' || get().userRole === 'Admin'
 }))
 
 export default useCommunityStore

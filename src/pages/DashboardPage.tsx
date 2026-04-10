@@ -1,266 +1,200 @@
 import { useNavigate } from 'react-router-dom'
 import {
-  Route, Users, Zap, Clock, ArrowRight, TrendingUp,
-  MapPin, Calendar, Plus, Compass
+  Route, Users, Zap, TrendingUp,
+  MapPin, Plus, Navigation, ArrowRight
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import useAuthStore from '@/features/auth/store/authStore'
 import useRideStore from '@/features/rides/store/rideStore'
 import useCommunityStore from '@/features/community/store/communityStore'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
-  const { rides } = useRideStore()
-  const { communities } = useCommunityStore()
+  const { rides, isLoading: ridesLoading } = useRideStore()
+  const { communities, isLoading: commsLoading } = useCommunityStore()
   const navigate = useNavigate()
+
+  const loading = ridesLoading || commsLoading
 
   const activeRides = rides.filter(r => r.status === 'Active')
   const plannedRides = rides.filter(r => r.status === 'Planned')
   const completedRides = rides.filter(r => r.status === 'Completed')
 
   const stats = [
-    { 
-      icon: Route, 
-      label: 'Total Rides', 
-      value: rides.length, 
-      color: 'text-blue-600', 
-      bg: 'bg-blue-50' 
-    },
-    { 
-      icon: Users, 
-      label: 'Communities', 
-      value: communities.length, 
-      color: 'text-cyan-600', 
-      bg: 'bg-cyan-50' 
-    },
-    { 
-      icon: Zap, 
-      label: 'Active Now', 
-      value: activeRides.length, 
-      color: 'text-emerald-600', 
-      bg: 'bg-emerald-50' 
-    },
-    { 
-      icon: TrendingUp, 
-      label: 'Completed', 
-      value: completedRides.length, 
-      color: 'text-orange-600', 
-      bg: 'bg-orange-50' 
-    },
+    { icon: Route, label: 'Total Rides', value: rides.length, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { icon: Users, label: 'Communities', value: communities.length, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { icon: Zap, label: 'Active Now', value: activeRides.length, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { icon: TrendingUp, label: 'Completed', value: completedRides.length, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ]
 
-  const getTimeOfDay = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'morning'
-    if (hour < 17) return 'afternoon'
-    return 'evening'
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
   }
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+  const item = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 }
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-10"
+    >
       {/* Hero Greeting */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-            Good {getTimeOfDay()}, <span className="text-primary">{user?.name?.split(' ')[0] || 'Rider'}</span>
+        <motion.div variants={item} className="space-y-2">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase italic leading-none">
+            Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || 'Rider'}</span>
           </h1>
-          <p className="text-lg text-muted-foreground">Ready for your next adventure? Here's your summary.</p>
-        </div>
-        <div className="flex items-center gap-3">
+          <p className="text-lg text-muted-foreground font-medium">The road is calling. Your tactical summary is ready.</p>
+        </motion.div>
+        <motion.div variants={item} className="flex items-center gap-3">
           <button 
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-tight"
             onClick={() => navigate('/create-ride')}
           >
             <Plus size={20} />
-            <span>New Ride</span>
+            <span>Create Mission</span>
           </button>
-          <button 
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-card border font-semibold hover:bg-muted transition-all"
-            onClick={() => navigate('/join')}
-          >
-            <Compass size={20} />
-            <span>Join Ride</span>
-          </button>
-        </div>
+        </motion.div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="group p-6 rounded-3xl bg-card border hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all">
-            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
-              <stat.icon size={24} />
-            </div>
-            <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
-            <div className="text-sm font-medium text-muted-foreground">{stat.label}</div>
-          </div>
-        ))}
+        {loading ? (
+          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-[2.5rem]" />)
+        ) : (
+          stats.map((stat, i) => (
+            <motion.div 
+              key={i} 
+              variants={item}
+              className="group p-6 rounded-[2.5rem] bg-card/50 backdrop-blur-xl border border-border/50 hover:border-primary/50 transition-all shadow-rugged"
+            >
+              <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+                <stat.icon size={28} />
+              </div>
+              <div className="text-4xl font-black tracking-tighter">{stat.value}</div>
+              <div className="text-xs font-black text-muted-foreground uppercase tracking-widest">{stat.label}</div>
+            </motion.div>
+          ))
+        )}
       </div>
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Rides Sections */}
         <div className="xl:col-span-2 space-y-10">
           {/* Active Rides */}
-          {activeRides.length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <h2 className="text-2xl font-bold tracking-tight">Active Rides</h2>
-                </div>
-                <button 
-                  className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
-                  onClick={() => navigate('/rides')}
-                >
-                  View all <ArrowRight size={14} />
-                </button>
+          <section className="space-y-6">
+            <motion.div variants={item} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h2 className="text-2xl font-black tracking-tight uppercase italic">Active Operations</h2>
               </div>
+            </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activeRides.map(ride => (
-                  <div
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {loading ? (
+                Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-[2.5rem]" />)
+              ) : activeRides.length > 0 ? (
+                activeRides.map(ride => (
+                  <motion.div
                     key={ride.id}
-                    className="group relative p-6 rounded-3xl bg-card border-2 border-emerald-100 hover:border-emerald-300 transition-all cursor-pointer"
+                    variants={item}
+                    className="group relative p-6 rounded-[2.5rem] bg-card backdrop-blur-xl border-2 border-emerald-500/20 hover:border-emerald-500/40 transition-all cursor-pointer shadow-rugged"
                     onClick={() => navigate(`/ride/${ride.id}`)}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-emerald-500/20">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live
+                        LIVE TRACKING
                       </span>
-                      <span className="font-mono text-xs font-semibold text-muted-foreground">{ride.ride_code}</span>
                     </div>
-                    <h3 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">{ride.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{ride.community_name}</p>
-                    <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                      <span className="flex items-center gap-1.5"><Users size={14} /> {ride.participants}/{ride.max_participants}</span>
-                      <span className="flex items-center gap-1.5"><MapPin size={14} /> {ride.distance}</span>
-                      <span className="flex items-center gap-1.5"><Clock size={14} /> {ride.estimated_duration}</span>
-                    </div>
-                    <div className="mt-5 pt-4 border-t flex items-center justify-between text-xs font-bold text-primary group-hover:gap-2 transition-all">
-                      <span>OPEN REAL-TIME TRACKER</span>
+                    <h3 className="text-xl font-black mb-1 group-hover:text-primary transition-colors uppercase italic">{ride.name}</h3>
+                    <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-tighter">{ride.community_name}</p>
+                    <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between text-[10px] font-black text-primary uppercase">
+                      <span>ENGAGE TRACKER</span>
                       <ArrowRight size={14} />
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div variants={item} className="col-span-full p-12 rounded-[2.5rem] bg-muted/20 border-2 border-dashed border-border/50 text-center flex flex-col items-center justify-center gap-4">
+                  <p className="text-xs font-black text-muted-foreground uppercase">No active operations currently detected.</p>
+                </motion.div>
+              )}
+            </div>
+          </section>
 
           {/* Upcoming Rides */}
           <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-                <Calendar size={24} className="text-primary" />
-                Upcoming
+            <motion.div variants={item} className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-2xl font-black tracking-tight uppercase italic flex items-center gap-3">
+                <Navigation size={24} className="text-primary" />
+                Planned Routes
               </h2>
-              <button 
-                className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
-                onClick={() => navigate('/rides')}
-              >
-                View all <ArrowRight size={14} />
-              </button>
-            </div>
+            </motion.div>
 
-            {plannedRides.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {plannedRides.map(ride => (
-                  <div
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {loading ? (
+                Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-[2.5rem]" />)
+              ) : plannedRides.length > 0 ? (
+                plannedRides.map(ride => (
+                  <motion.div
                     key={ride.id}
-                    className="group p-6 rounded-3xl bg-card border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+                    variants={item}
+                    className="group p-6 rounded-[2.5rem] bg-card/50 border border-border/50 hover:border-primary/30 transition-all cursor-pointer shadow-rugged"
                     onClick={() => navigate(`/ride/${ride.id}`)}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                        Planned
-                      </span>
-                      <span className="font-mono text-xs font-semibold text-muted-foreground">{ride.ride_code}</span>
+                      <span className="px-3 py-1 rounded-full bg-muted/50 text-muted-foreground text-[10px] font-black uppercase tracking-widest border border-border/50">PLANNED</span>
+                      <span className="font-mono text-[10px] font-bold text-primary/50">{ride.ride_code}</span>
                     </div>
-                    <h3 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">{ride.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{ride.community_name}</p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <Calendar size={14} className="text-primary" />
-                        {formatDate(ride.start_time)}
-                      </div>
-                      <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                        <span className="flex items-center gap-1.5"><Users size={14} /> {ride.participants}/{ride.max_participants}</span>
-                        <span className="flex items-center gap-1.5"><MapPin size={14} /> {ride.distance}</span>
-                      </div>
+                    <h3 className="text-xl font-black mb-1 group-hover:text-primary transition-colors uppercase italic">{ride.name}</h3>
+                    <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-tighter">{ride.community_name}</p>
+                    <div className="flex items-center gap-4 text-[10px] font-black text-muted-foreground uppercase">
+                      <span className="flex items-center gap-1.5"><Users size={14} /> {ride.participants} RIDERS</span>
+                      <span className="flex items-center gap-1.5"><MapPin size={14} /> {ride.distance}</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-12 rounded-3xl bg-muted/30 border-2 border-dashed border-muted text-center space-y-4">
-                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                  <Route size={32} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold">No upcoming rides</h3>
-                  <p className="text-muted-foreground">Plan your next adventure or join an existing ride.</p>
-                </div>
-                <button 
-                  className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-semibold"
-                  onClick={() => navigate('/create-ride')}
-                >
-                  Create a Ride
-                </button>
-              </div>
-            )}
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div variants={item} className="col-span-full p-12 rounded-[2.5rem] bg-muted/20 border-2 border-dashed border-border/50 text-center">
+                  <p className="text-xs font-black text-muted-foreground uppercase italic underline cursor-pointer" onClick={() => navigate('/create-ride')}>Click to initiate new mission</p>
+                </motion.div>
+              )}
+            </div>
           </section>
         </div>
 
-        {/* Sidebar content */}
-        <div className="space-y-8">
-          {/* Communities */}
-          <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold tracking-tight">Your Communities</h2>
-            </div>
+        {/* Sidebar */}
+        <motion.div variants={item} className="space-y-8">
+          <section className="bg-card/30 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-6 shadow-rugged">
+            <h3 className="text-xl font-black uppercase italic mb-6 tracking-tight">The Brotherhood</h3>
             <div className="space-y-3">
-              {communities.slice(0, 4).map(comm => (
-                <div
-                  key={comm.id}
-                  className="group p-4 rounded-2xl bg-card border hover:border-primary/50 hover:bg-muted/50 transition-all cursor-pointer flex items-center gap-4"
-                  onClick={() => navigate('/communities')}
-                >
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
-                    {comm.name.charAt(0)}
-                  </div>
+              {loading ? (
+                Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)
+              ) : communities.slice(0, 5).map(comm => (
+                <div key={comm.id} className="p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 transition-all border border-transparent hover:border-primary/20 flex items-center gap-4 cursor-pointer">
+                  <div className="h-10 w-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center font-black">{comm.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold truncate">{comm.name}</h4>
-                    <p className="text-xs text-muted-foreground truncate">{comm.members} members · {comm.rides} rides</p>
+                    <h4 className="text-sm font-black uppercase italic tracking-tight truncate">{comm.name}</h4>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">{comm.members_count || 0} RIDERS</p>
                   </div>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider",
-                    comm.role === 'Admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                  )}>
-                    {comm.role}
-                  </span>
                 </div>
               ))}
             </div>
-            <button 
-              className="w-full py-3 rounded-2xl border-2 border-dashed border-muted text-sm font-semibold text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
-              onClick={() => navigate('/communities')}
-            >
-              Browse All Communities
-            </button>
           </section>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
