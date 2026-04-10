@@ -220,10 +220,15 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
       try {
         const coords = orderedWaypoints.map(p => `${p.lng},${p.lat}`).join(';')
         
-        // Pass alternatives=3 to ask the engine for multiple real paths
-        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=3`)
+        // Use Mapbox Directions API to natively resolve alternatives
+        const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN
+        if (!mapboxToken) throw new Error('Missing Mapbox Token in configuration')
+
+        const response = await fetch(
+          `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?alternatives=true&geometries=geojson&overview=full&access_token=${mapboxToken}`
+        )
         
-        if (!response.ok) throw new Error('Route fetch failed')
+        if (!response.ok) throw new Error('Mapbox route fetch failed')
         const data = await response.json()
 
         const options: RouteOption[] = []
@@ -246,7 +251,7 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
           throw new Error('No routes generated')
         }
       } catch (error) {
-        console.error('OSRM routing failed:', error)
+        console.error('Mapbox routing failed:', error)
         // Fallback: Aviation / Straight line approximation
         const fallbackCoords = orderedWaypoints.map(p => [p.lat, p.lng] as [number, number])
         let totalDist = 0
@@ -302,13 +307,20 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
         scrollWheelZoom={true}
         zoomControl={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={theme === 'dark'
-            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          }
-        />
+        {import.meta.env.VITE_MAPBOX_TOKEN ? (
+          <TileLayer
+            attribution='© <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
+            url={`https://api.mapbox.com/styles/v1/mapbox/${theme === 'dark' ? 'dark-v11' : 'streets-v12'}/tiles/256/{z}/{x}/{y}@2x?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`}
+          />
+        ) : (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url={theme === 'dark'
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            }
+          />
+        )}
 
         <MapEvents onClick={handleMapClick} />
         <FlyToPoint center={flyTarget.center} zoom={flyTarget.zoom} />
