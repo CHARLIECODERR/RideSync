@@ -59,18 +59,37 @@ interface RideState {
 }
 
 const useRideStore = create<RideState>((set, get) => ({
-  rides: [...mockRides] as Ride[],
+  rides: [],
   activeRide: null,
-  participants: [...mockParticipants] as Participant[],
-  alerts: [...mockAlerts] as RideAlert[],
+  participants: [],
+  alerts: [],
   isLoading: false,
   locationSimInterval: null,
 
   fetchRides: async () => {
     set({ isLoading: true })
-    // In a real app, this would fetch from Supabase
-    await new Promise(resolve => setTimeout(resolve, 600))
-    set({ isLoading: false })
+    try {
+      const dbRides = await rideService.listAllRides()
+      const uiRides: Ride[] = dbRides.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        status: r.status,
+        ride_code: r.ride_code,
+        participants: r.participants?.[0]?.count || 0,
+        max_participants: r.max_participants,
+        community_name: r.communities?.name || 'HQ', 
+        community_id: r.community_id,
+        distance: r.ride_routes?.[0]?.distance_km ? `${r.ride_routes[0].distance_km} km` : '0 km',
+        estimated_duration: r.ride_routes?.[0]?.duration_mins ? `${r.ride_routes[0].duration_mins} mins` : '0 mins',
+        start_time: r.start_time,
+        created_at: r.created_at
+      }))
+      set({ rides: uiRides, isLoading: false })
+    } catch (error) {
+      console.error('Failed to fetch rides', error)
+      set({ isLoading: false })
+    }
   },
 
   createRide: async (rideData, routeData, stops) => {

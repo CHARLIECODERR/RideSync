@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom'
 import { Route, Users, MapPin, Clock, Calendar, ArrowRight, Filter } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useRideStore, { Ride } from '@/features/rides/store/rideStore'
 import { cn } from '@/lib/utils'
 
 export default function RidesPage() {
-  const { rides } = useRideStore()
+  const { rides, fetchRides } = useRideStore()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<Ride['status'] | 'all'>('all')
+
+  useEffect(() => {
+    fetchRides()
+  }, [fetchRides])
 
   const filtered = filter === 'all'
     ? rides

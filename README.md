@@ -74,3 +74,8 @@ RideSync/
 - **Rides Maps / Logic:** `src/features/rides/pages/RidesPage.tsx` and `src/features/rides/pages/CreateRidePage.tsx`
 - **Theme Global States:** `src/store/themeStore.ts`
 - **Mock Fallback Data:** `src/lib/mockData.ts` (Used when Supabase calls fail or are uninitialized)
+
+## ?? Version 2.0 (Latest Release)
+- **Production Integration**: Fully connected Supabase backend.
+- **Tactical Map Core**: Dynamic waypoint management.
+- **Branded Evolution**: Sidebar and UI overhauled with Tactical/Asphalt theme.

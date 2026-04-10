@@ -76,11 +76,27 @@ export const rideService = {
     return ride as Ride
   },
 
+  async listAllRides() {
+    const { data, error } = await supabase
+      .from('rides')
+      .select(`
+        *,
+        communities(name),
+        ride_routes(distance_km, duration_mins, start_location, end_location),
+        participants:ride_participants(count)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
   async getRideDetails(rideId: string) {
     const { data: ride, error: rideError } = await supabase
       .from('rides')
       .select(`
         *,
+        communities(name),
         route:ride_routes(*),
         stops:ride_stops(*)
       `)
@@ -94,12 +110,16 @@ export const rideService = {
   async listCommunityRides(communityId: string) {
     const { data, error } = await supabase
       .from('rides')
-      .select('*')
+      .select(`
+        *,
+        ride_routes(distance_km, duration_mins, start_location, end_location),
+        participants:ride_participants(count)
+      `)
       .eq('community_id', communityId)
       .order('start_time', { ascending: true })
 
     if (error) throw error
-    return data as Ride[]
+    return data
   },
   
   // ... other methods kept for compatibility
