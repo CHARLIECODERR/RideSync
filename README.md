@@ -1,16 +1,76 @@
-# React + Vite
+# RideSync 🚗🇮🇳
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+RideSync is a modern, responsive web application designed for users to find, create, and share rides. The app strongly emphasizes the idea of community travel ("Syncing with Bharat") and offers seamless location tracking, ride matching, and a vibrant community interface.
 
-Currently, two official plugins are available:
+## Tech Stack
+- **Framework:** React 19 with Vite, TypeScript
+- **Styling:** Tailwind CSS, Framer Motion (for animations), PostCSS
+- **State Management:** Zustand
+- **Routing:** React Router v7
+- **Maps:** Leaflet & React-Leaflet
+- **Backend as a Service:** Supabase (Auth, Database, Postgres schemas)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+- **User Authentication:** Sign up, log in, and secure auth flows powered by Supabase.
+- **Rides & Mapping:** Find rides, view available trips via Leaflet maps, and publish your own rides.
+- **Communities:** Discover groups of riders sharing common interests or general travel routes. Join groups and participate.
+- **Interactive UI:** Smooth transitions and glassmorphic designs, optimized with a custom Tailwind theme configuration (`indigo-royal`, `saffron-vibrant`, etc).
 
-## React Compiler
+## Folder Structure & Architecture 
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The project follows a **Feature-Sliced Design** architecture for scalability and maintainability.
 
-## Expanding the ESLint configuration
+```text
+RideSync/
+├── public/                 # Static assets (images, icons)
+├── src/
+│   ├── components/         # Shared UI and Layout components
+│   │   ├── layout/         # Base layout wrapper, Sidebar
+│   │   ├── landing/        # Landing page specific components (Navbar)
+│   │   └── ui/             # Reusable core UI blocks (e.g. Skeleton loaders)
+│   ├── features/           # Distinct domain areas
+│   │   ├── auth/           # Login/Signup pages, Auth callbacks, ProtectedRoutes, Supabase services
+│   │   ├── community/      # Listing communities, Community Detail view, Store, and Services
+│   │   └── rides/          # Ride listing, Ride creation form, map logic, Store, and Services
+│   ├── pages/              # High-level route pages (LandingPage, DashboardPage)
+│   ├── lib/                # Third-party configuration and generic utilities (Supabase client, mockData.ts)
+│   ├── store/              # Global Zustand stores (e.g., ThemeStore)
+│   ├── App.tsx             # Main routing hub
+│   └── main.tsx            # React application entry point
+├── rides_schema.sql        # Database table definitions for Rides Module
+├── community_schema.sql    # Database table definitions for Community Module
+└── package.json            # Dependencies and scripts
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Setup & Running Locally
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Environment Variables:**
+   Create a `.env` file from the `.env.example` file and populate your Supabase URL and Key:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+3. **Database Setup:**
+   Run the scripts `rides_schema.sql` and `community_schema.sql` in your Supabase SQL Editor to generate the necessary tables.
+
+4. **Start Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The site will be available around `http://localhost:5173`.
+
+## File Index Reference for Agent Assistants
+- **Application Entry Point:** `src/main.tsx` & `src/App.tsx` (Contains all routing constraints)
+- **Supabase Client / Keys:** `src/lib/supabase.ts` and `.env`
+- **Dashboard / Home:** `src/pages/DashboardPage.tsx`
+- **Authentication Pages:** `src/features/auth/pages/AuthPage.tsx`
+- **Rides Maps / Logic:** `src/features/rides/pages/RidesPage.tsx` and `src/features/rides/pages/CreateRidePage.tsx`
+- **Theme Global States:** `src/store/themeStore.ts`
+- **Mock Fallback Data:** `src/lib/mockData.ts` (Used when Supabase calls fail or are uninitialized)
