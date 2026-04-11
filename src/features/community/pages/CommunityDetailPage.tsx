@@ -5,6 +5,7 @@ import {
   Settings, ArrowLeft, Plus, Zap, LogOut, ShieldCheck, ArrowRight
 } from 'lucide-react'
 import useCommunityStore from '../store/communityStore'
+import useRideStore from '@/features/rides/store/rideStore'
 import MemberManagement from '../components/MemberManagement'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +14,7 @@ export default function CommunityDetailPage() {
   const navigate = useNavigate()
   const { 
     activeCommunity, 
-    isLoading, 
+    isLoading: commsLoading, 
     loadCommunity, 
     isAdmin, 
     isArranger, 
@@ -22,13 +23,18 @@ export default function CommunityDetailPage() {
     leaveCommunity
   } = useCommunityStore()
 
+  const { rides, fetchRides, getRidesByCommunity } = useRideStore()
   const [isJoining, setIsJoining] = useState(false)
 
   useEffect(() => {
     if (id) {
       loadCommunity(id)
+      fetchRides()
     }
-  }, [id, loadCommunity])
+  }, [id, loadCommunity, fetchRides])
+
+  const communityRides = id ? getRidesByCommunity(id) : []
+  const isLoading = commsLoading || !id
 
   const handleJoin = async () => {
     if (!id) return
@@ -159,18 +165,48 @@ export default function CommunityDetailPage() {
           {/* Ride Feed Placeholder - Rugged Empty State */}
           <div className="space-y-8">
             <h3 className="text-3xl font-black uppercase italic tracking-tighter">Upcoming <span className="text-saffron">Expeditions.</span></h3>
-            <div className="py-24 bg-white/5 border-2 border-white/5 border-dashed flex flex-col items-center justify-center text-center space-y-6">
-              <div className="h-16 w-16 rounded-full bg-black flex items-center justify-center text-white/10">
-                <Calendar size={32} />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xl font-black uppercase italic tracking-tighter">No Rides Logged</h4>
-                <p className="text-white/40 text-sm font-bold max-w-xs mx-auto uppercase tracking-wide">Be the one to signal the pack. Start an expedition now.</p>
-              </div>
-              {isMember && (
-                <button className="px-6 py-2 bg-saffron text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all">
-                  Schedule Start
-                </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {communityRides.length > 0 ? (
+                communityRides.map(ride => (
+                  <div 
+                    key={ride.id}
+                    className="p-6 bg-white/5 border border-white/10 hover:border-saffron/30 transition-all cursor-pointer group"
+                    onClick={() => navigate(`/ride/${ride.id}`)}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                       <span className={cn(
+                        "px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                        ride.status === 'Active' ? "bg-emerald-500/10 text-emerald-500" : "bg-white/10 text-white/40"
+                      )}>
+                        {ride.status}
+                      </span>
+                      <span className="font-mono text-[9px] text-white/20">{ride.ride_code}</span>
+                    </div>
+                    <h4 className="text-xl font-black uppercase italic group-hover:text-saffron transition-colors">{ride.name}</h4>
+                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      <span>{ride.distance} • {ride.participants} RIDERS</span>
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-24 bg-white/5 border-2 border-white/5 border-dashed flex flex-col items-center justify-center text-center space-y-6">
+                  <div className="h-16 w-16 rounded-full bg-black flex items-center justify-center text-white/10">
+                    <Calendar size={32} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xl font-black uppercase italic tracking-tighter">No Rides Logged</h4>
+                    <p className="text-white/40 text-sm font-bold max-w-xs mx-auto uppercase tracking-wide">Be the one to signal the pack. Start an expedition now.</p>
+                  </div>
+                  {isMember && (
+                    <button 
+                      onClick={() => navigate('/create-ride')}
+                      className="px-6 py-2 bg-saffron text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all"
+                    >
+                      Schedule Start
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

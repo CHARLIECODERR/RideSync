@@ -4,6 +4,7 @@ import {
   Bike, Compass, User, ChevronLeft, ChevronRight,
   Sun, Moon
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useState } from 'react'
 import useAuthStore from '@/features/auth/store/authStore'
 import { cn } from '@/lib/utils'
@@ -34,14 +35,16 @@ export default function Sidebar() {
       "h-screen bg-card border-r transition-all duration-300 flex flex-col sticky top-0",
       collapsed ? "w-20" : "w-64"
     )}>
-      <div className="p-4 flex items-center justify-between border-b h-16">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="bg-primary p-2 rounded-xl text-primary-foreground min-w-[40px] flex items-center justify-center">
-            <Bike size={22} />
+      <div className="p-6 flex items-center justify-between border-b border-white/5 h-24">
+        <div className="flex items-center gap-4 overflow-hidden">
+          <div className="bg-saffron p-2.5 rounded-none shadow-lg shadow-saffron/20 skew-x-[-10deg] flex items-center justify-center min-w-[42px]">
+            <div className="skew-x-[10deg]">
+              <Bike size={24} className="text-white" />
+            </div>
           </div>
           {!collapsed && (
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent truncate">
-              RideSync
+            <span className="font-black text-2xl tracking-[0.2em] uppercase italic text-foreground truncate">
+              RIDE<span className="text-saffron">SYNC</span>
             </span>
           )}
         </div>
@@ -54,59 +57,69 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 px-3 py-6 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 px-4 py-8 flex flex-col gap-2 overflow-y-auto overflow-x-hidden">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) => cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group",
+              "flex items-center gap-4 px-4 py-3.5 rounded-none transition-all group relative overflow-hidden",
               isActive 
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-saffron/10 text-saffron" 
+                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
             )}
             title={collapsed ? item.label : undefined}
           >
-            <item.icon size={20} className={cn("min-w-[20px]", !collapsed && "group-hover:scale-110 transition-transform")} />
-            {!collapsed && <span className="font-medium">{item.label}</span>}
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.div 
+                    layoutId="active-indicator"
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-saffron"
+                  />
+                )}
+                <item.icon size={20} className={cn("min-w-[20px]", !collapsed && "group-hover:scale-110 transition-transform duration-500")} />
+                {!collapsed && <span className="font-black uppercase tracking-widest text-[11px] italic">{item.label}</span>}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t mt-auto">
+      <div className="p-6 border-t border-white/5 mt-auto bg-black/20">
         <button
           onClick={toggleTheme}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all mb-2",
+            "flex items-center gap-4 w-full px-4 py-3 rounded-none text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:bg-white/5 hover:text-saffron transition-all mb-4",
             collapsed && "justify-center"
           )}
           title={theme === 'dark' ? "Light Mode" : "Dark Mode"}
         >
-          {theme === 'dark' ? <Sun size={20} className="min-w-[20px]" /> : <Moon size={20} className="min-w-[20px]" />}
-          {!collapsed && <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {theme === 'dark' ? <Sun size={18} className="min-w-[18px]" /> : <Moon size={18} className="min-w-[18px]" />}
+          {!collapsed && <span>{theme === 'dark' ? 'Daylight' : 'Asphalt'}</span>}
         </button>
 
         {!collapsed && user && (
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-muted/50 mb-3 border border-border/50">
-            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold border border-primary/20 shrink-0">
+          <div className="flex items-center gap-4 p-4 bg-muted/20 mb-6 border border-white/5 relative group overflow-hidden">
+            <div className="h-10 w-10 bg-saffron/10 border border-saffron/20 flex items-center justify-center font-black text-saffron italic shrink-0 group-hover:bg-saffron group-hover:text-white transition-all duration-500">
               {user.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold truncate">{user.name}</span>
-              <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+              <span className="text-[11px] font-black uppercase tracking-tight text-foreground truncate">{user.name}</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground truncate">Level 1 Rider</span>
             </div>
           </div>
         )}
         <button
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all",
+            "flex items-center gap-4 w-full px-4 py-3 rounded-none text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all",
             collapsed && "justify-center"
           )}
           onClick={handleLogout}
           title="Logout"
         >
-          <LogOut size={20} className="min-w-[20px]" />
-          {!collapsed && <span className="font-medium">Logout</span>}
+          <LogOut size={18} className="min-w-[18px]" />
+          {!collapsed && <span>Retreat</span>}
         </button>
       </div>
     </aside>

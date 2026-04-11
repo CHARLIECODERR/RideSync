@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Route, Users, Zap, TrendingUp,
@@ -12,9 +13,14 @@ import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
-  const { rides, isLoading: ridesLoading } = useRideStore()
-  const { communities, isLoading: commsLoading } = useCommunityStore()
+  const { rides, isLoading: ridesLoading, fetchRides } = useRideStore()
+  const { communities, isLoading: commsLoading, fetchCommunities } = useCommunityStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    fetchRides()
+    fetchCommunities()
+  }, [fetchRides, fetchCommunities])
 
   const loading = ridesLoading || commsLoading
 

@@ -3,10 +3,12 @@ import Layout from '@/components/layout/Layout'
 import LandingPage from '@/pages/LandingPage'
 import DashboardPage from '@/pages/DashboardPage'
 import RidesPage from '@/features/rides/pages/RidesPage'
+import RideDetailPage from '@/features/rides/pages/RideDetailPage'
 import CreateRidePage from '@/features/rides/pages/CreateRidePage'
 import CommunitiesPage from '@/features/community/pages/CommunitiesPage'
 import CommunityDetailPage from '@/features/community/pages/CommunityDetailPage'
 import AuthPage from '@/features/auth/pages/AuthPage'
+import ProfilePage from '@/features/auth/pages/ProfilePage'
 import AuthCallbackPage from '@/features/auth/pages/AuthCallbackPage'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -42,10 +44,11 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="rides" element={<RidesPage />} />
+          <Route path="ride/:id" element={<RideDetailPage />} />
           <Route path="create-ride" element={<CreateRidePage />} />
           <Route path="communities" element={<CommunitiesPage />} />
           <Route path="communities/:id" element={<CommunityDetailPage />} />
-          <Route path="profile" element={<div>Profile Page Placeholder</div>} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="join" element={<div>Join Ride Page Placeholder</div>} />
         </Route>
       </Route>
