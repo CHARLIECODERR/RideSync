@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
+import PWAInstallPrompt from '@/components/pwa/PWAInstallPrompt'
 import LandingPage from '@/pages/LandingPage'
 import DashboardPage from '@/pages/DashboardPage'
 import RidesPage from '@/features/rides/pages/RidesPage'
@@ -37,6 +38,8 @@ function App() {
   }
 
   return (
+    <>
+    <PWAInstallPrompt />
     <Routes>
       <Route path="/" element={<LandingPage />} />
       
@@ -60,6 +63,7 @@ function App() {
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
 
