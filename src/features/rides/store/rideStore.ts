@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { rideService, RideRoute, RideStop, Ride as ServiceRide } from '../services/rideService'
-import { mockRides, mockParticipants, mockAlerts } from '@/lib/mockData'
+import * as turf from '@turf/turf'
 
 export interface Ride {
   id: string
@@ -17,6 +17,7 @@ export interface Ride {
   start_time: string
   end_time?: string
   stops?: any[]
+  route?: any
   created_at?: string
 }
 
@@ -44,6 +45,13 @@ interface RideState {
   participants: Participant[]
   alerts: RideAlert[]
   isLoading: boolean
+  isRideModeActive: boolean
+  navigationMetadata: { 
+    nextInstruction: string, 
+    distanceToNext: number, 
+    isOffRoute: boolean,
+    speed: number 
+  } | null
   locationSimInterval: any
   fetchRides: () => Promise<void>
   createRide: (rideData: Partial<Ride>, routeData: RideRoute, stops: RideStop[]) => Promise<Ride>
@@ -56,6 +64,11 @@ interface RideState {
   sendAlert: (alert: Partial<RideAlert>) => void
   getRidesByStatus: (status: Ride['status']) => Ride[]
   getRidesByCommunity: (communityId: string) => Ride[]
+  deleteRide: (rideId: string) => Promise<void>
+  setRideMode: (active: boolean) => void
+  updateNavigationMetadata: (meta: any) => void
+  currentUserLocation: { lat: number, lng: number } | null
+  watchId: number | null
 }
 
 const useRideStore = create<RideState>((set, get) => ({
@@ -64,7 +77,11 @@ const useRideStore = create<RideState>((set, get) => ({
   participants: [],
   alerts: [],
   isLoading: false,
+  isRideModeActive: false,
+  navigationMetadata: null,
   locationSimInterval: null,
+  currentUserLocation: null,
+  watchId: null,
 
   fetchRides: async () => {
     set({ isLoading: true })
@@ -80,9 +97,10 @@ const useRideStore = create<RideState>((set, get) => ({
         max_participants: r.max_participants,
         community_name: r.communities?.name || 'HQ', 
         community_id: r.community_id,
-        distance: r.ride_routes?.[0]?.distance_km ? `${r.ride_routes[0].distance_km} km` : '0 km',
-        estimated_duration: r.ride_routes?.[0]?.duration_mins ? `${r.ride_routes[0].duration_mins} mins` : '0 mins',
+        distance: (Array.isArray(r.ride_routes) ? r.ride_routes[0] : r.ride_routes)?.distance_km ? `${(Array.isArray(r.ride_routes) ? r.ride_routes[0] : r.ride_routes).distance_km} km` : '0 km',
+        estimated_duration: (Array.isArray(r.ride_routes) ? r.ride_routes[0] : r.ride_routes)?.duration_mins ? `${(Array.isArray(r.ride_routes) ? r.ride_routes[0] : r.ride_routes).duration_mins} mins` : '0 mins',
         start_time: r.start_time,
+        route: Array.isArray(r.ride_routes) ? r.ride_routes[0] : r.ride_routes,
         created_at: r.created_at
       }))
       set({ rides: uiRides, isLoading: false })
@@ -95,11 +113,10 @@ const useRideStore = create<RideState>((set, get) => ({
   createRide: async (rideData, routeData, stops) => {
     set({ isLoading: true })
     try {
-      // Align types for service call
       const serviceRideData: Partial<ServiceRide> = {
         name: rideData.name,
         description: rideData.description,
-        community_id: rideData.community_id,
+        community_id: rideData.community_id || '',
         start_time: rideData.start_time,
         max_participants: rideData.max_participants,
         status: rideData.status as ServiceRide['status']
@@ -107,20 +124,20 @@ const useRideStore = create<RideState>((set, get) => ({
 
       const dbRide = await rideService.createRide(serviceRideData, routeData, stops)
       
-      // Transform ServiceRide back to UI Ride
       const newRide: Ride = {
         id: dbRide.id,
         name: dbRide.name,
         description: dbRide.description || '',
         status: dbRide.status,
         ride_code: dbRide.ride_code,
-        participants: 1, // The creator who was added as Lead
+        participants: 1,
         max_participants: dbRide.max_participants,
         community_id: dbRide.community_id,
-        community_name: 'HQ', // Will be updated on next fetch
+        community_name: 'HQ',
         distance: routeData.distance_km ? `${routeData.distance_km} km` : '0 km',
         estimated_duration: routeData.duration_mins ? `${routeData.duration_mins} mins` : '0 mins',
         start_time: dbRide.start_time,
+        route: routeData,
         created_at: new Date().toISOString()
       }
 
@@ -137,15 +154,15 @@ const useRideStore = create<RideState>((set, get) => ({
     }
   },
 
-  getRide: (id) => {
+  getRide: (id: string) => {
     return get().rides.find(r => r.id === id)
   },
 
-  setActiveRide: (ride) => {
+  setActiveRide: (ride: Ride | null) => {
     set({ activeRide: ride })
   },
 
-  startRide: async (rideId) => {
+  startRide: async (rideId: string) => {
     try {
       await rideService.updateRideStatus(rideId, 'Active')
       set((state) => ({
@@ -154,29 +171,59 @@ const useRideStore = create<RideState>((set, get) => ({
         ),
       }))
 
-      const interval = setInterval(() => {
-        set((state) => ({
-          participants: state.participants.map(p => {
-            if (p.lat && p.lng && p.status === 'Approved') {
-              return {
-                ...p,
-                lat: p.lat + (Math.random() - 0.5) * 0.0001,
-                lng: p.lng + (Math.random() - 0.5) * 0.0001,
-                lastUpdate: Date.now(),
+      if ("geolocation" in navigator) {
+        const id = navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude, speed } = position.coords
+            const currentSpeed = speed ? Math.round(speed * 3.6) : 0 // km/h
+            
+            set({ currentUserLocation: { lat: latitude, lng: longitude } })
+            
+            // Navigation Logic
+            const state = get()
+            const activeRide = state.activeRide
+            const route = activeRide?.route
+            
+            if (route && route.geometry) {
+              try {
+                const userPoint = turf.point([longitude, latitude])
+                const line = turf.lineString(route.geometry.coordinates)
+                const snapped = turf.nearestPointOnLine(line, userPoint)
+                const distanceOff = turf.distance(userPoint, snapped, { units: 'meters' })
+                
+                // Advanced Navigation Metadata
+                const isOffRoute = distanceOff > 100 // Warning if > 100m off
+                
+                set({ 
+                  navigationMetadata: {
+                    nextInstruction: isOffRoute ? "OFF COURSE! REJOIN ROUTE" : "STAY ON PLANNED ROUTE",
+                    distanceToNext: 0, 
+                    isOffRoute,
+                    speed: currentSpeed
+                  }
+                })
+              } catch (e) {
+                console.error('Navigation calculation failed', e)
               }
             }
-            return p
-          }),
-        }))
-      }, 3000)
-
-      set({ locationSimInterval: interval })
+          },
+          (error) => {
+            console.error('CRITICAL: Tracking lost', error)
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 1000,
+            timeout: 10000
+          }
+        )
+        set({ watchId: id, isRideModeActive: true })
+      }
     } catch (error) {
       console.error('Failed to start ride', error)
     }
   },
 
-  endRide: async (rideId) => {
+  endRide: async (rideId: string) => {
     try {
       await rideService.updateRideStatus(rideId, 'Completed')
       set((state) => ({
@@ -185,18 +232,17 @@ const useRideStore = create<RideState>((set, get) => ({
         ),
       }))
 
-      const { locationSimInterval } = get()
-      if (locationSimInterval) {
-        clearInterval(locationSimInterval)
-        set({ locationSimInterval: null })
+      const { watchId } = get()
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId)
+        set({ watchId: null, currentUserLocation: null, isRideModeActive: false, navigationMetadata: null })
       }
     } catch (error) {
       console.error('Failed to end ride', error)
     }
   },
 
-  joinRide: async (rideCode) => {
-    await new Promise(resolve => setTimeout(resolve, 800))
+  joinRide: async (rideCode: string) => {
     const ride = get().rides.find(r => r.ride_code === rideCode)
     if (ride) {
       set((state) => ({
@@ -209,7 +255,7 @@ const useRideStore = create<RideState>((set, get) => ({
     return null
   },
 
-  approveParticipant: (userId) => {
+  approveParticipant: (userId: string) => {
     set((state) => ({
       participants: state.participants.map(p =>
         p.id === userId ? { ...p, status: 'Approved' as const } : p
@@ -217,7 +263,7 @@ const useRideStore = create<RideState>((set, get) => ({
     }))
   },
 
-  sendAlert: (alert) => {
+  sendAlert: (alert: Partial<RideAlert>) => {
     const newAlert: RideAlert = {
       id: 'a-' + Date.now(),
       type: alert.type || 'Info',
@@ -231,13 +277,32 @@ const useRideStore = create<RideState>((set, get) => ({
     }))
   },
 
-  getRidesByStatus: (status) => {
+  getRidesByStatus: (status: Ride['status']) => {
     return get().rides.filter(r => r.status === status)
   },
 
-  getRidesByCommunity: (communityId) => {
+  getRidesByCommunity: (communityId: string) => {
     return get().rides.filter(r => r.community_id === communityId)
   },
+
+  deleteRide: async (rideId: string) => {
+    set({ isLoading: true })
+    try {
+      await rideService.deleteRide(rideId)
+      set((state) => ({
+        rides: state.rides.filter(r => r.id !== rideId),
+        isLoading: false
+      }))
+    } catch (error) {
+      console.error('Failed to delete ride', error)
+      set({ isLoading: false })
+      throw error
+    }
+  },
+
+  setRideMode: (active: boolean) => set({ isRideModeActive: active }),
+  
+  updateNavigationMetadata: (meta: any) => set({ navigationMetadata: meta }),
 }))
 
 export default useRideStore

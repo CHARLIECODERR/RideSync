@@ -172,5 +172,14 @@ export const rideService = {
       .eq('id', rideId)
 
     if (error) throw error
+  },
+
+  async deleteRide(rideId: string) {
+    const { error } = await supabase
+      .from('rides')
+      .delete()
+      .eq('id', rideId)
+
+    if (error) throw error
   }
 }
