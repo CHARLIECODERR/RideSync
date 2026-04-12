@@ -43,7 +43,11 @@ export const rideService = {
     const { data: ride, error: rideError } = await supabase
       .from('rides')
       .insert([{
-        ...rideData,
+        name: rideData.name,
+        description: rideData.description,
+        community_id: rideData.community_id,
+        start_time: rideData.start_time || new Date().toISOString(),
+        max_participants: rideData.max_participants || 15,
         created_by: userData.user.id,
         ride_code: rideCode,
         status: 'Planned'
@@ -57,21 +61,44 @@ export const rideService = {
     const { error: routeError } = await supabase
       .from('ride_routes')
       .insert([{
-        ...routeData,
-        ride_id: ride.id
+        ride_id: ride.id,
+        start_location: routeData.start_location,
+        end_location: routeData.end_location,
+        waypoints: routeData.waypoints || [],
+        distance_km: routeData.distance_km || 0,
+        duration_mins: routeData.duration_mins || 0,
+        geometry: routeData.geometry || null
       }])
 
     if (routeError) throw routeError
 
     // 3. Create Stops
     if (stops.length > 0) {
-      const stopsWithId = stops.map(s => ({ ...s, ride_id: ride.id }))
+      const stopsToInsert = stops.map((s, index) => ({
+        ride_id: ride.id,
+        name: s.name,
+        type: s.type,
+        location: s.location,
+        order: index + 1,
+        note: s.note || ''
+      }))
       const { error: stopsError } = await supabase
         .from('ride_stops')
-        .insert(stopsWithId)
+        .insert(stopsToInsert)
 
       if (stopsError) throw stopsError
     }
+
+    // 4. Add Creator as Lead Participant
+    const { error: participantError } = await supabase
+      .from('ride_participants')
+      .insert([{
+        ride_id: ride.id,
+        user_id: userData.user.id,
+        role: 'Lead'
+      }])
+
+    if (participantError) throw participantError
 
     return ride as Ride
   },
@@ -134,6 +161,15 @@ export const rideService = {
         user_id: userData.user.id,
         role: 'Rider'
       }])
+
+    if (error) throw error
+  },
+
+  async updateRideStatus(rideId: string, status: 'Planned' | 'Active' | 'Completed' | 'Cancelled') {
+    const { error } = await supabase
+      .from('rides')
+      .update({ status })
+      .eq('id', rideId)
 
     if (error) throw error
   }

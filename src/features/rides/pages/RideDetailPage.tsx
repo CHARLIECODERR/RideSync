@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   MapPin, Calendar, Users, Clock, 
@@ -21,25 +21,45 @@ export default function RideDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const markers = useMemo(() => {
+    if (!ride) return []
+    return [
+      { id: 'start', lat: ride.route?.[0]?.start_location?.lat, lng: ride.route?.[0]?.start_location?.lng, type: 'start' as const, name: ride.route?.[0]?.start_location?.name || 'Start' },
+      { id: 'end', lat: ride.route?.[0]?.end_location?.lat, lng: ride.route?.[0]?.end_location?.lng, type: 'end' as const, name: ride.route?.[0]?.end_location?.name || 'End' },
+      ...(ride.stops || []).map((s: any) => ({
+        id: s.id,
+        lat: s.location.lat,
+        lng: s.location.lng,
+        type: s.type,
+        name: s.name
+      }))
+    ].filter(m => m.lat && m.lng)
+  }, [ride])
+
   useEffect(() => {
     async function loadRide() {
       if (!id) return
       setLoading(true)
+      setError(null)
       try {
+        console.log('Fetching mission intel for:', id)
         const data = await rideService.getRideDetails(id)
+        if (!data) throw new Error('Intel corrupted or mission not found.')
+        
         setRide(data)
+        
         // Also set as active in store if user is viewing it and it's active
         if (data.status === 'Active') {
           setActiveRide({
             ...data,
-            community_name: 'Community', // Fallback
-            distance: data.route?.[0]?.distance_km ? `${data.route[0].distance_km} km` : '0 km',
+            community_name: data.communities?.name || 'Vanguard Command',
+            distance: data.route?.[0]?.distance_km ? `${data.route[0].distance_km} km` : '0.0 km',
             estimated_duration: data.route?.[0]?.duration_mins ? `${data.route[0].duration_mins} mins` : '0 mins',
-            participants: 1 // Default for now
+            participants: data.participants?.length || 1
           })
         }
       } catch (err: any) {
-        console.error('Failed to load ride:', err)
+        console.error('CRITICAL ERROR: Mission loading failed', err)
         setError(err.message || 'Mission intel unavailable.')
       } finally {
         setLoading(false)
@@ -51,8 +71,8 @@ export default function RideDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] gap-6">
-        <div className="h-16 w-16 border-4 border-saffron/10 border-t-saffron rounded-full animate-spin" />
-        <p className="font-black text-white/20 uppercase tracking-[0.5em] animate-pulse">Decrypting Mission Intel...</p>
+        <div className="h-16 w-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+        <p className="font-black text-white/20 uppercase tracking-[0.5em] animate-pulse">Loading ride details...</p>
       </div>
     )
   }
@@ -60,25 +80,13 @@ export default function RideDetailPage() {
   if (error || !ride) {
     return (
       <div className="py-20 text-center space-y-4">
-        <AlertTriangle className="mx-auto text-saffron" size={48} />
-        <h2 className="text-4xl font-black uppercase italic">Intel Link Severed.</h2>
-        <p className="text-white/40">{error || "This expedition record has been purged."}</p>
-        <button onClick={() => navigate('/rides')} className="text-saffron font-black uppercase tracking-widest text-sm underline underline-offset-8 transition-all hover:scale-105">Return to Garage</button>
+        <AlertTriangle className="mx-auto text-primary" size={48} />
+        <h2 className="text-4xl font-black uppercase italic">Ride Not Found</h2>
+        <p className="text-white/40">{error || "This ride may have been removed."}</p>
+        <button onClick={() => navigate('/rides')} className="text-primary font-black uppercase tracking-widest text-sm underline underline-offset-8 transition-all hover:scale-105">Back to Rides</button>
       </div>
     )
   }
-
-  const markers = [
-    { id: 'start', lat: ride.route?.[0]?.start_location?.lat, lng: ride.route?.[0]?.start_location?.lng, type: 'start' as const, name: ride.route?.[0]?.start_location?.name || 'Start' },
-    { id: 'end', lat: ride.route?.[0]?.end_location?.lat, lng: ride.route?.[0]?.end_location?.lng, type: 'end' as const, name: ride.route?.[0]?.end_location?.name || 'End' },
-    ...(ride.stops || []).map((s: any) => ({
-      id: s.id,
-      lat: s.location.lat,
-      lng: s.location.lng,
-      type: s.type,
-      name: s.name
-    }))
-  ].filter(m => m.lat && m.lng)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,7 +114,7 @@ export default function RideDetailPage() {
             <div className="flex flex-wrap items-center gap-4">
               <span className={cn("px-4 py-1.5 border text-[10px] font-black uppercase tracking-[0.3em] italic flex items-center gap-2", getStatusColor(ride.status))}>
                 {ride.status === 'Active' && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />}
-                {ride.status} Expedition
+                {ride.status} Ride
               </span>
               <span className="font-mono text-xs font-bold text-white/20 tracking-widest">{ride.ride_code}</span>
             </div>
@@ -123,7 +131,7 @@ export default function RideDetailPage() {
                 className="group relative flex items-center gap-4 px-10 py-6 bg-emerald-600 text-white font-black uppercase tracking-tighter hover:bg-emerald-500 transition-all skew-x-[-15deg] shadow-2xl shadow-emerald-500/20"
               >
                 <div className="skew-x-[15deg] flex items-center gap-2">
-                  <Play size={20} fill="currentColor" /> Initiate Mission
+                  <Play size={20} fill="currentColor" /> Start Ride
                 </div>
               </button>
             )}
@@ -133,7 +141,7 @@ export default function RideDetailPage() {
                 className="group relative flex items-center gap-4 px-10 py-6 bg-red-600 text-white font-black uppercase tracking-tighter hover:bg-red-500 transition-all skew-x-[-15deg] shadow-2xl shadow-red-500/20"
               >
                 <div className="skew-x-[15deg] flex items-center gap-2">
-                  <CheckCircle2 size={20} /> Conclude Mission
+                  <CheckCircle2 size={20} /> Finish Ride
                 </div>
               </button>
             )}
@@ -154,6 +162,7 @@ export default function RideDetailPage() {
             center={markers[0] ? [markers[0].lat, markers[0].lng] : [20.5937, 78.9629]} 
             zoom={12}
             markers={markers}
+            preloadedRoute={ride.route?.[0]?.geometry}
           />
         </div>
 
@@ -161,8 +170,8 @@ export default function RideDetailPage() {
         <div className="space-y-8 overflow-y-auto pr-2 custom-scrollbar">
           {/* Tactical Specs */}
           <section className="bg-zinc-950 border border-white/5 p-8 space-y-6 shadow-2xl">
-            <h3 className="text-[10px] font-black text-saffron uppercase tracking-[0.5em] flex items-center gap-2">
-              <Shield size={14} /> Tactical Specs
+            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
+              <Shield size={14} /> Ride Details
             </h3>
             
             <div className="grid gap-6">
@@ -200,8 +209,8 @@ export default function RideDetailPage() {
 
           {/* Logistics Area (Stops) */}
           <section className="bg-zinc-950 border border-white/5 p-8 space-y-6">
-            <h3 className="text-[10px] font-black text-saffron uppercase tracking-[0.5em] flex items-center gap-2">
-              <Fuel size={14} /> Logistics Feed
+            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
+              <Fuel size={14} /> Route Stops
             </h3>
 
             <div className="space-y-4">

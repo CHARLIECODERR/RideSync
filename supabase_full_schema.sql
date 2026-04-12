@@ -1,12 +1,25 @@
 -- ==========================================
--- RideSync Complete Project Schema (Updated)
+-- RideSync Complete Project Schema (Idempotent / Full Reset)
 -- ==========================================
 
--- 0. Enable Extensions
+-- 0. Clean Up (Drop existing tables and functions to ensure a fresh setup)
+-- Note: CASCADE ensures that dependent objects like policies and foreign keys are also removed.
+DROP TABLE IF EXISTS public.ride_join_requests CASCADE;
+DROP TABLE IF EXISTS public.ride_participants CASCADE;
+DROP TABLE IF EXISTS public.ride_stops CASCADE;
+DROP TABLE IF EXISTS public.ride_routes CASCADE;
+DROP TABLE IF EXISTS public.rides CASCADE;
+DROP TABLE IF EXISTS public.community_members CASCADE;
+DROP TABLE IF EXISTS public.communities CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+
+-- 1. Enable Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. Profiles Table (Linked to Supabase Auth)
-CREATE TABLE IF NOT EXISTS public.profiles (
+-- 2. Profiles Table (Linked to Supabase Auth)
+CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   name TEXT,
   email TEXT,
@@ -48,29 +61,45 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 2. Communities Table
-CREATE TABLE IF NOT EXISTS public.communities (
+-- 3. Communities Table
+CREATE TABLE public.communities (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  created_by UUID REFERENCES auth.users ON DELETE SET NULL,
+  created_by UUID REFERENCES public.profiles ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Community Members / Roles
-CREATE TABLE IF NOT EXISTS public.community_members (
+-- Function to automatically add creator as Admin
+CREATE OR REPLACE FUNCTION public.handle_new_community()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.community_members (community_id, user_id, role)
+  VALUES (NEW.id, NEW.created_by, 'Admin');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger for new community
+DROP TRIGGER IF EXISTS on_community_created ON public.communities;
+CREATE TRIGGER on_community_created
+  AFTER INSERT ON public.communities
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_community();
+
+-- 4. Community Members / Roles
+CREATE TABLE public.community_members (
   community_id UUID REFERENCES public.communities ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles ON DELETE CASCADE,
   role TEXT DEFAULT 'Rider' CHECK (role IN ('Admin', 'Arranger', 'Rider')),
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (community_id, user_id)
 );
 
--- 4. Rides Table (Mission Meta)
-CREATE TABLE IF NOT EXISTS public.rides (
+-- 5. Rides Table (Metadata)
+CREATE TABLE public.rides (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   community_id UUID REFERENCES public.communities(id) ON DELETE CASCADE,
-  created_by UUID REFERENCES auth.users(id),
+  created_by UUID REFERENCES public.profiles(id),
   name TEXT NOT NULL,
   description TEXT,
   start_time TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -80,8 +109,8 @@ CREATE TABLE IF NOT EXISTS public.rides (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Ride Routes (The Mission Path)
-CREATE TABLE IF NOT EXISTS public.ride_routes (
+-- 6. Ride Routes (Path Data)
+CREATE TABLE public.ride_routes (
   ride_id UUID REFERENCES public.rides(id) ON DELETE CASCADE PRIMARY KEY,
   start_location JSONB NOT NULL, -- { lat, lng, name }
   end_location JSONB NOT NULL,   -- { lat, lng, name }
@@ -91,8 +120,8 @@ CREATE TABLE IF NOT EXISTS public.ride_routes (
   waypoints JSONB DEFAULT '[]'   -- Array of lat/lng defining the calculated route
 );
 
--- 6. Ride Stops (Waypoints)
-CREATE TABLE IF NOT EXISTS public.ride_stops (
+-- 7. Ride Stops (Waypoints)
+CREATE TABLE public.ride_stops (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   ride_id UUID REFERENCES public.rides(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -103,27 +132,27 @@ CREATE TABLE IF NOT EXISTS public.ride_stops (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. Ride Participants (The Pack)
-CREATE TABLE IF NOT EXISTS public.ride_participants (
+-- 8. Ride Participants (The Pack)
+CREATE TABLE public.ride_participants (
   ride_id UUID REFERENCES public.rides(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   role TEXT DEFAULT 'Rider' CHECK (role IN ('Lead', 'Sweep', 'Rider')),
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (ride_id, user_id)
 );
 
--- 8. Ride Join Requests
-CREATE TABLE IF NOT EXISTS public.ride_join_requests (
+-- 9. Ride Join Requests
+CREATE TABLE public.ride_join_requests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   ride_id UUID REFERENCES public.rides(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   note TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(ride_id, user_id)
 );
 
--- 9. Enable RLS for all other tables
+-- 10. Enable RLS for all tables
 ALTER TABLE public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
@@ -132,7 +161,7 @@ ALTER TABLE public.ride_stops ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ride_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ride_join_requests ENABLE ROW LEVEL SECURITY;
 
--- 10. Unified Policies based on project structure
+-- 11. Consolidated Policies
 
 -- Communities
 CREATE POLICY "Anyone can view communities" 
@@ -148,8 +177,11 @@ CREATE POLICY "Creators can manage communities"
 CREATE POLICY "Anyone can view community memberships" 
   ON public.community_members FOR SELECT USING (true);
 
-CREATE POLICY "Users can join communities as Riders" 
-  ON public.community_members FOR INSERT WITH CHECK (auth.uid() = user_id AND role = 'Rider');
+CREATE POLICY "Users can join communities" 
+  ON public.community_members FOR INSERT WITH CHECK (
+    (auth.uid() = user_id AND role = 'Rider') OR
+    (EXISTS (SELECT 1 FROM public.communities WHERE id = community_id AND created_by = auth.uid()))
+  );
 
 CREATE POLICY "Admins can update membership roles" 
   ON public.community_members FOR UPDATE 

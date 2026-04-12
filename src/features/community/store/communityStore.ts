@@ -42,7 +42,7 @@ const useCommunityStore = create<CommunityState>((set, get) => ({
   },
 
   loadCommunity: async (id) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, activeCommunity: null, activeMembers: [], userRole: null })
     try {
       const [community, members, role] = await Promise.all([
         communityService.getCommunity(id),

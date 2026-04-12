@@ -23,6 +23,7 @@ interface PremiumMapProps {
   center: [number, number]
   zoom?: number
   onConfirmPoint?: (lat: number, lng: number, type: 'start' | 'end' | 'fuel' | 'food' | 'break', name?: string) => void
+  onRouteUpdate?: (distanceMeters: number, durationSeconds: number, geometry: any) => void
   markers?: Array<{
     id: string
     lat: number
@@ -30,6 +31,7 @@ interface PremiumMapProps {
     type: 'start' | 'end' | 'fuel' | 'food' | 'break' | 'other'
     name: string
   }>
+  preloadedRoute?: any // Geometry from DB
   className?: string
 }
 
@@ -97,8 +99,15 @@ function FlyToPoint({ center, zoom }: { center: [number, number], zoom: number }
 
 function FitBoundsController({ markers }: { markers: Array<{ lat: number, lng: number }> }) {
   const map = useMap()
+  const lastKeyRef = useRef('')
+
   useEffect(() => {
     if (markers.length < 2) return
+    
+    const key = markers.map(m => `${m.lat},${m.lng}`).join('|')
+    if (key === lastKeyRef.current) return
+    lastKeyRef.current = key
+
     const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng] as [number, number]))
     map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, duration: 1.2 })
   }, [markers, map])
@@ -112,7 +121,15 @@ const ROUTE_COLORS = [
   { core: '#f59e0b', glow: '#f59e0b', label: 'Alternative 2' },
 ]
 
-export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 13, onConfirmPoint, markers = [], className }: PremiumMapProps) {
+export default function PremiumMap({ 
+  center: initialCenter, 
+  zoom: initialZoom = 13, 
+  onConfirmPoint, 
+  onRouteUpdate, 
+  markers = [], 
+  preloadedRoute,
+  className 
+}: PremiumMapProps) {
   const { theme } = useThemeStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -207,22 +224,47 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
     return points
   }, [markers])
 
-  // --- Fetch MULTIPLE routes from OSRM ---
+  const lastWaypointsRef = useRef<string>('')
+
+  // --- Handle preloaded route ---
   useEffect(() => {
+    if (preloadedRoute && preloadedRoute.coordinates) {
+      const coords = preloadedRoute.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number])
+      setRouteOptions([{
+        coords,
+        distance: 0, 
+        duration: 0,
+        label: 'Saved Route'
+      }])
+      setSelectedRouteIndex(0)
+    }
+  }, [preloadedRoute])
+
+  // --- Fetch MULTIPLE routes from OSRM/Mapbox ---
+  useEffect(() => {
+    if (preloadedRoute) return // Skip if we have a saved route
     if (orderedWaypoints.length < 2) {
       setRouteOptions([])
       setSelectedRouteIndex(0)
+      lastWaypointsRef.current = ''
       return
     }
+
+    // Deep compare waypoints string to prevent redundant fetches
+    const waypointsKey = orderedWaypoints.map(p => `${p.lat},${p.lng}`).join(';')
+    if (waypointsKey === lastWaypointsRef.current) return
+    lastWaypointsRef.current = waypointsKey
 
     const fetchRoutes = async () => {
       setIsLoadingRoute(true)
       try {
         const coords = orderedWaypoints.map(p => `${p.lng},${p.lat}`).join(';')
         
-        // Use Mapbox Directions API to natively resolve alternatives
         const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN
-        if (!mapboxToken) throw new Error('Missing Mapbox Token in configuration')
+        if (!mapboxToken || mapboxToken.includes('your_')) {
+          console.warn('Mapbox Token missing or placeholder. Switching to direct LineString.')
+          throw new Error('Limited connectivity')
+        }
 
         const response = await fetch(
           `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?alternatives=true&geometries=geojson&overview=full&access_token=${mapboxToken}`
@@ -247,36 +289,38 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
         if (options.length > 0) {
           setRouteOptions(options)
           setSelectedRouteIndex(0)
-        } else {
-          throw new Error('No routes generated')
+          if (onRouteUpdate) {
+            onRouteUpdate(options[0].distance, options[0].duration, data.routes[0].geometry)
+          }
         }
       } catch (error) {
         console.error('Mapbox routing failed:', error)
-        // Fallback: Aviation / Straight line approximation
+        // Fallback: Direct line
         const fallbackCoords = orderedWaypoints.map(p => [p.lat, p.lng] as [number, number])
         let totalDist = 0
         for (let i = 1; i < fallbackCoords.length; i++) {
           totalDist += L.latLng(fallbackCoords[i - 1]).distanceTo(L.latLng(fallbackCoords[i]))
         }
         
-        // At massive distances, default to a jet estimation (approx 900km/h => 15km/min)
-        // rather than highway driving speeds which don't apply to straight lines across continents.
-        const speedKmMpm = 15
-        
-        setRouteOptions([{
+        const fallback = {
           coords: fallbackCoords,
           distance: totalDist,
-          duration: (totalDist / 1000) * 60, // Keep driving estimate duration for UX, assuming 60km/h avg
-          label: 'Direct Aviation Path (Network Limit Exceeded)',
-        }])
+          duration: (totalDist / 1000) * 60,
+          label: 'Direct Path (Network Limit)',
+        }
+        setRouteOptions([fallback])
         setSelectedRouteIndex(0)
+        if (onRouteUpdate) {
+          onRouteUpdate(totalDist, (totalDist / 1000) * 60, { type: 'LineString', coordinates: fallbackCoords.map(c => [c[1], c[0]]) })
+        }
       } finally {
         setIsLoadingRoute(false)
       }
     }
 
-    fetchRoutes()
-  }, [orderedWaypoints])
+    const timer = setTimeout(fetchRoutes, 400) // Debounce fetch
+    return () => clearTimeout(timer)
+  }, [orderedWaypoints, onRouteUpdate])
 
   const handleMapClick = (lat: number, lng: number) => {
     setPendingPoint({ lat, lng, name: 'Selected Location' })
@@ -415,13 +459,13 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
                     onClick={() => confirmSelection('start')}
                     className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white text-[11px] font-black uppercase transition-all"
                   >
-                    Set as Mission Start <Target size={14} />
+                    Set as Start <Target size={14} />
                   </button>
                   <button
                     onClick={() => confirmSelection('end')}
                     className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[11px] font-black uppercase transition-all"
                   >
-                    Set as Mission End <MapPin size={14} />
+                    Set as Destination <MapPin size={14} />
                   </button>
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     <button
@@ -520,6 +564,23 @@ export default function PremiumMap({ center: initialCenter, zoom: initialZoom = 
             </div>
           )}
         </div>
+      </div>
+
+      <div className="absolute top-24 right-6 z-[1000] flex flex-col gap-2 pointer-events-auto">
+        <button
+          onClick={() => {
+            if ("geolocation" in navigator) {
+              navigator.geolocation.getCurrentPosition((pos) => {
+                const { latitude, longitude } = pos.coords
+                setFlyTarget({ center: [latitude, longitude], zoom: 15 })
+              })
+            }
+          }}
+          className="p-3 rounded-2xl bg-background/90 backdrop-blur-xl border border-border/50 shadow-2xl hover:scale-110 active:scale-90 transition-all text-primary"
+          title="My Location"
+        >
+          <Target size={20} />
+        </button>
       </div>
 
       {/* ========== ROUTE PICKER PANEL ========== */}

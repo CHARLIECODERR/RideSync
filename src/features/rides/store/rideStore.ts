@@ -109,12 +109,19 @@ const useRideStore = create<RideState>((set, get) => ({
       
       // Transform ServiceRide back to UI Ride
       const newRide: Ride = {
-        ...dbRide,
-        participants: 1, 
-        community_name: 'HQ', 
-        distance: '0.0 km', 
-        estimated_duration: '0 mins',
-        status: dbRide.status
+        id: dbRide.id,
+        name: dbRide.name,
+        description: dbRide.description || '',
+        status: dbRide.status,
+        ride_code: dbRide.ride_code,
+        participants: 1, // The creator who was added as Lead
+        max_participants: dbRide.max_participants,
+        community_id: dbRide.community_id,
+        community_name: 'HQ', // Will be updated on next fetch
+        distance: routeData.distance_km ? `${routeData.distance_km} km` : '0 km',
+        estimated_duration: routeData.duration_mins ? `${routeData.duration_mins} mins` : '0 mins',
+        start_time: dbRide.start_time,
+        created_at: new Date().toISOString()
       }
 
       set((state) => ({
@@ -138,42 +145,54 @@ const useRideStore = create<RideState>((set, get) => ({
     set({ activeRide: ride })
   },
 
-  startRide: (rideId) => {
-    set((state) => ({
-      rides: state.rides.map(r =>
-        r.id === rideId ? { ...r, status: 'Active' as const } : r
-      ),
-    }))
-
-    const interval = setInterval(() => {
+  startRide: async (rideId) => {
+    try {
+      await rideService.updateRideStatus(rideId, 'Active')
       set((state) => ({
-        participants: state.participants.map(p => {
-          if (p.lat && p.lng && p.status === 'Approved') {
-            return {
-              ...p,
-              lat: p.lat + (Math.random() - 0.5) * 0.002,
-              lng: p.lng + (Math.random() - 0.5) * 0.002,
-              lastUpdate: Date.now(),
-            }
-          }
-          return p
-        }),
+        rides: state.rides.map(r =>
+          r.id === rideId ? { ...r, status: 'Active' as const } : r
+        ),
       }))
-    }, 3000)
 
-    set({ locationSimInterval: interval })
+      const interval = setInterval(() => {
+        set((state) => ({
+          participants: state.participants.map(p => {
+            if (p.lat && p.lng && p.status === 'Approved') {
+              return {
+                ...p,
+                lat: p.lat + (Math.random() - 0.5) * 0.0001,
+                lng: p.lng + (Math.random() - 0.5) * 0.0001,
+                lastUpdate: Date.now(),
+              }
+            }
+            return p
+          }),
+        }))
+      }, 3000)
+
+      set({ locationSimInterval: interval })
+    } catch (error) {
+      console.error('Failed to start ride', error)
+    }
   },
 
-  endRide: (rideId) => {
-    const { locationSimInterval } = get()
-    if (locationSimInterval) clearInterval(locationSimInterval)
+  endRide: async (rideId) => {
+    try {
+      await rideService.updateRideStatus(rideId, 'Completed')
+      set((state) => ({
+        rides: state.rides.map(r =>
+          r.id === rideId ? { ...r, status: 'Completed' as const, end_time: new Date().toISOString() } : r
+        ),
+      }))
 
-    set((state) => ({
-      rides: state.rides.map(r =>
-        r.id === rideId ? { ...r, status: 'Completed' as const, end_time: new Date().toISOString() } : r
-      ),
-      locationSimInterval: null,
-    }))
+      const { locationSimInterval } = get()
+      if (locationSimInterval) {
+        clearInterval(locationSimInterval)
+        set({ locationSimInterval: null })
+      }
+    } catch (error) {
+      console.error('Failed to end ride', error)
+    }
   },
 
   joinRide: async (rideCode) => {

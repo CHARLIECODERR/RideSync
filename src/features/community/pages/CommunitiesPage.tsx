@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Search, Plus, Globe, ArrowRight, Shield, X, Zap } from 'lucide-react'
+import { Users, Search, Plus, Globe, ArrowRight, Shield, X, Zap, AlertTriangle } from 'lucide-react'
 import useCommunityStore from '../store/communityStore'
 import { cn } from '@/lib/utils'
 
@@ -8,27 +8,50 @@ export default function CommunitiesPage() {
   const { communities, isLoading, fetchCommunities, createCommunity } = useCommunityStore()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedTerm, setDebouncedTerm] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTerm(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
     fetchCommunities()
   }, [fetchCommunities])
 
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    const community = await createCommunity(newName, newDesc)
-    if (community) {
-      setIsCreateOpen(false)
-      setNewName('')
-      setNewDesc('')
-      navigate(`/communities/${community.id}`)
+    setCreateError(null)
+    setIsSubmitting(true)
+
+    try {
+      const community = await createCommunity(newName, newDesc)
+      if (community) {
+        setIsCreateOpen(false)
+        setNewName('')
+        setNewDesc('')
+        navigate(`/communities/${community.id}`)
+      } else {
+        setCreateError("Failed to establish club. Please check your connection and try again.")
+      }
+    } catch (err: any) {
+      setCreateError(err.message || "An unexpected error occurred.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const filtered = communities.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    c.name.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
+    c.description?.toLowerCase().includes(debouncedTerm.toLowerCase())
   )
 
   return (
@@ -162,12 +185,19 @@ export default function CommunitiesPage() {
               </div>
 
               <form onSubmit={handleCreate} className="space-y-8">
+                {createError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300">
+                    <AlertTriangle className="inline-block mr-2" size={14} /> {createError}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-saffron uppercase tracking-[0.4em] ml-1">Club Name</label>
                   <input 
                     type="text"
                     required
-                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-black uppercase tracking-widest text-xl italic transition-all placeholder:text-white/5"
+                    disabled={isSubmitting}
+                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-black uppercase tracking-widest text-xl italic transition-all placeholder:text-white/5 disabled:opacity-50"
                     placeholder="E.G. RAJASTHAN RANGERS"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
@@ -179,7 +209,8 @@ export default function CommunitiesPage() {
                   <textarea 
                     rows={4}
                     required
-                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-bold text-sm tracking-wide transition-all placeholder:text-white/5 resize-none leading-relaxed"
+                    disabled={isSubmitting}
+                    className="w-full px-6 py-5 bg-black border border-white/10 focus:border-saffron outline-none font-bold text-sm tracking-wide transition-all placeholder:text-white/5 resize-none leading-relaxed disabled:opacity-50"
                     placeholder="Tell us what your brotherhood stands for. Who do you ride for? What roads do you own?"
                     value={newDesc}
                     onChange={e => setNewDesc(e.target.value)}
@@ -188,9 +219,16 @@ export default function CommunitiesPage() {
 
                 <button 
                   type="submit"
-                  className="w-full py-6 bg-saffron text-white font-black text-xl uppercase tracking-tighter hover:bg-orange-600 transition-all flex items-center justify-center gap-3 group shadow-2xl shadow-saffron/20"
+                  disabled={isSubmitting}
+                  className="w-full py-6 bg-saffron text-white font-black text-xl uppercase tracking-tighter hover:bg-orange-600 transition-all flex items-center justify-center gap-3 group shadow-2xl shadow-saffron/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Forging The Club <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-3">
+                      <Zap className="animate-spin" size={20} /> Forging...
+                    </span>
+                  ) : (
+                    <>Forging The Club <ArrowRight className="group-hover:translate-x-2 transition-transform" /></>
+                  )}
                 </button>
               </form>
             </div>
