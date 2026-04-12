@@ -30,30 +30,46 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true })
     
-    // 1. Get initial session
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (session?.user) {
-      try {
-        let profile = await authService.getProfile(session.user.id)
-        
-        // Lazy create profile if missing
-        if (!profile) {
-          console.log('Repairing missing profile for user:', session.user.id)
-          profile = await authService.createProfile(
-            session.user.id, 
-            session.user.user_metadata?.full_name || 'Rider', 
-            session.user.email || ''
-          )
+    try {
+      // 1. Get initial session with a race against a timeout
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth Timeout')), 6000))
+      
+      const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+      
+      if (session?.user) {
+        try {
+          // Fetch profile with its own mini-timeout or error handling
+          let profile = await authService.getProfile(session.user.id)
+          
+          if (!profile) {
+            console.log('Repairing missing profile for user:', session.user.id)
+            profile = await authService.createProfile(
+              session.user.id, 
+              session.user.user_metadata?.full_name || 'Rider', 
+              session.user.email || ''
+            )
+          }
+          
+          set({ user: profile, isAuthenticated: true })
+        } catch (e) {
+          console.error('Failed to sync profile during init', e)
+          // Fallback to minimal user info so app isn't stuck
+          set({ 
+            user: { 
+              id: session.user.id, 
+              name: session.user.user_metadata?.full_name || 'Rider',
+              email: session.user.email || ''
+            } as any, 
+            isAuthenticated: true 
+          })
         }
-        
-        set({ user: profile, isAuthenticated: true })
-      } catch (e) {
-        console.error('Failed to sync profile during init', e)
       }
+    } catch (e) {
+      console.error('Initial session check failed or timed out', e)
+    } finally {
+      set({ isInitialized: true, isLoading: false })
     }
-
-    set({ isInitialized: true, isLoading: false })
 
     // 2. Listen for auth changes
     supabase.auth.onAuthStateChange(async (event, session) => {
