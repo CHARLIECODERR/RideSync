@@ -231,14 +231,15 @@ const useRideStore = create<RideState>((set, get) => ({
           r.id === rideId ? { ...r, status: 'Completed' as const, end_time: new Date().toISOString() } : r
         ),
       }))
-
+    } catch (error) {
+      console.error('Failed to end ride', error)
+    } finally {
+      // Always clear GPS regardless of API success/failure
       const { watchId } = get()
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId)
-        set({ watchId: null, currentUserLocation: null, isRideModeActive: false, navigationMetadata: null })
       }
-    } catch (error) {
-      console.error('Failed to end ride', error)
+      set({ watchId: null, currentUserLocation: null, isRideModeActive: false, navigationMetadata: null })
     }
   },
 
