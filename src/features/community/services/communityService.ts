@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { api, isLocalMode } from '@/lib/api'
+
 
 export interface Community {
   id: string
@@ -24,6 +26,11 @@ export interface CommunityMember {
 
 export const communityService = {
   async listCommunities() {
+    if (isLocalMode()) {
+      const { data } = await api.get('/communities')
+      return data
+    }
+
     const { data, error } = await supabase
       .from('communities')
       .select(`
@@ -44,19 +51,27 @@ export const communityService = {
   async getCommunity(id: string) {
     const { data, error } = await supabase
       .from('communities')
-      .select('*')
+      .select(`
+        *,
+        members:community_members(count),
+        rides:rides(count)
+      `)
       .eq('id', id)
       .single()
 
     if (error) throw error
-    return data as Community
+    return {
+      ...data,
+      members_count: data.members?.[0]?.count || 0,
+      rides_count: data.rides?.[0]?.count || 0
+    } as Community
   },
 
   async createCommunity(name: string, description: string) {
     const { data: userData } = await supabase.auth.getUser()
-    if (!userData.user) throw new Error('Unauthorized')
+    if (!userData.user) throw new Error('Authorized')
 
-    // 1. Create community
+    // 1. Create community (Trigger on_community_created will add creator as Admin)
     const { data, error } = await supabase
       .from('communities')
       .insert([{ 
@@ -68,10 +83,6 @@ export const communityService = {
       .single()
 
     if (error) throw error
-
-    // 2. Add creator as Admin
-    await this.addMember(data.id, userData.user.id, 'Admin')
-
     return data as Community
   },
 

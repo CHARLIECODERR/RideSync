@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Profile {
+  id         String   @id @default(uuid())
+  name       String?
+  email      String   @unique
+  password   String?
+  google_id  String?  @unique
+  avatar_url String?
+  updated_at DateTime @default(now()) @updatedAt
+
+  created_communities Community[]       @relation("CommunityCreator")
+  communities         CommunityMember[]
+  rides               Ride[]            @relation("RideCreator")
+  participations     RideParticipant[]
+  join_requests       RideJoinRequest[]
+
+  @@map("profiles")
+}
+
+
+model Community {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  created_by  String?
+  created_at  DateTime @default(now())
+
+  creator     Profile?          @relation("CommunityCreator", fields: [created_by], references: [id], onDelete: SetNull)
+  members     CommunityMember[]
+  rides       Ride[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  community_id String
+  user_id      String
+  role         String   @default("Rider") // Admin, Arranger, Rider
+  joined_at    DateTime @default(now())
+
+  community    Community @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  user         Profile   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([community_id, user_id])
+  @@map("community_members")
+}
+
+model Ride {
+  id               String   @id @default(uuid())
+  community_id     String?
+  created_by       String?
+  name             String
+  description      String?
+  start_time       DateTime
+  max_participants Int      @default(15)
+  status           String   @default("Planned") // Planned, Active, Completed, Cancelled, Draft
+  ride_code        String?  @unique
+  created_at       DateTime @default(now())
+
+  community    Community?        @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  creator      Profile?          @relation("RideCreator", fields: [created_by], references: [id], onDelete: SetNull)
+  route        RideRoute?
+  stops        RideStop[]
+  participants RideParticipant[]
+  requests     RideJoinRequest[]
+
+  @@map("rides")
+}
+
+model RideRoute {
+  ride_id        String  @id
+  start_location Json
+  end_location   Json
+  distance_km    Float?
+  duration_mins  Int?
+  geometry       Json?
+  waypoints      Json?   @default("[]")
+
+  ride           Ride    @relation(fields: [ride_id], references: [id], onDelete: Cascade)
+
+  @@map("ride_routes")
+}
+
+model RideStop {
+  id         String   @id @default(uuid())
+  ride_id    String
+  name       String
+  type       String // fuel, food, break, landmark, other, start, end
+  location   Json
+  order      Int
+  note       String?
+  created_at DateTime @default(now())
+
+  ride       Ride     @relation(fields: [ride_id], references: [id], onDelete: Cascade)
+
+  @@map("ride_stops")
+}
+
+model RideParticipant {
+  ride_id   String
+  user_id   String
+  role      String   @default("Rider") // Lead, Sweep, Rider
+  joined_at DateTime @default(now())
+
+  ride      Ride     @relation(fields: [ride_id], references: [id], onDelete: Cascade)
+  user      Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([ride_id, user_id])
+  @@map("ride_participants")
+}
+
+model RideJoinRequest {
+  id         String   @id @default(uuid())
+  ride_id    String
+  user_id    String
+  status     String   @default("pending") // pending, approved, rejected
+  note       String?
+  created_at DateTime @default(now())
+
+  ride       Ride     @relation(fields: [ride_id], references: [id], onDelete: Cascade)
+  user       Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([ride_id, user_id])
+  @@map("ride_join_requests")
+}
+
+

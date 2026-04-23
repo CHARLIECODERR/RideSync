@@ -11,9 +11,11 @@ export const useAuth = () => {
     login, 
     signup, 
     logout, 
+    loginWithGoogle,
     clearError,
     initAuth
   } = useAuthStore()
+
 
   // Auto-initialize auth on hook use (usually once at app root)
   useEffect(() => {
@@ -28,11 +30,13 @@ export const useAuth = () => {
     isLoading,
     isInitialized,
     error,
-    login,
-    signup,
-    logout,
+    login, 
+    signup, 
+    logout, 
+    loginWithGoogle,
     clearError
   }
 }
+
 
 export default useAuth

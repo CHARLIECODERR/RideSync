@@ -20,7 +20,8 @@ export default function CommunityDetailPage() {
     isArranger, 
     userRole,
     joinCommunity,
-    leaveCommunity
+    leaveCommunity,
+    error: storeError
   } = useCommunityStore()
 
   const { rides, fetchRides, getRidesByCommunity } = useRideStore()
@@ -55,16 +56,16 @@ export default function CommunityDetailPage() {
   if (isLoading && !activeCommunity) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] gap-6">
-        <div className="h-16 w-16 border-4 border-saffron/10 border-t-saffron rounded-full animate-spin" />
-        <p className="font-black text-white/20 uppercase tracking-[0.5em] animate-pulse">Infiltrating Hub...</p>
+        <div className="h-16 w-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+        <p className="font-black text-white/20 uppercase tracking-[0.5em] animate-pulse">Loading Hub...</p>
       </div>
     )
   }
 
-  if (!activeCommunity) return (
+  if (storeError || !activeCommunity) return (
     <div className="py-20 text-center space-y-4">
-      <h2 className="text-4xl font-black uppercase italic">Abandoned Road.</h2>
-      <p className="text-white/40">This community no longer exists in our records.</p>
+      <h2 className="text-4xl font-black uppercase italic">{storeError ? "Access Denied." : "Abandoned Road."}</h2>
+      <p className="text-white/40">{storeError || "This community no longer exists in our records."}</p>
       <button onClick={() => navigate('/communities')} className="text-saffron font-black uppercase tracking-widest text-sm underline underline-offset-8">Return to Garage</button>
     </div>
   )
@@ -141,30 +142,24 @@ export default function CommunityDetailPage() {
         {/* Main Intel Column */}
         <div className="lg:col-span-2 space-y-16">
           {/* Stats Grid - Industrial */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 bg-white/5 border border-white/10 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 bg-white/5 border border-white/10 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
             <div className="p-10 space-y-2">
-              <div className="text-saffron font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3">
-                <Users size={14} /> Total Pack
+              <div className="text-primary font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3">
+                <Users size={14} /> Members
               </div>
-              <div className="text-5xl font-black italic tracking-tighter">124</div>
+              <div className="text-5xl font-black italic tracking-tighter">{activeCommunity.members_count || 0}</div>
             </div>
             <div className="p-10 space-y-2">
-              <div className="text-saffron font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3">
-                <Calendar size={14} /> Active Intel
+              <div className="text-primary font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3">
+                <Calendar size={14} /> Total Rides
               </div>
-              <div className="text-5xl font-black italic tracking-tighter">12</div>
-            </div>
-            <div className="p-10 space-y-2">
-              <div className="text-saffron font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3">
-                <MapPin size={14} /> Road Time
-              </div>
-              <div className="text-5xl font-black italic tracking-tighter">4.2K</div>
+              <div className="text-5xl font-black italic tracking-tighter">{activeCommunity.rides_count || 0}</div>
             </div>
           </div>
 
           {/* Ride Feed Placeholder - Rugged Empty State */}
           <div className="space-y-8">
-            <h3 className="text-3xl font-black uppercase italic tracking-tighter">Upcoming <span className="text-saffron">Expeditions.</span></h3>
+            <h3 className="text-3xl font-black uppercase italic tracking-tighter">Upcoming <span className="text-primary">Rides.</span></h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {communityRides.length > 0 ? (
                 communityRides.map(ride => (

@@ -2,36 +2,49 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
+import { isLocalMode } from '@/lib/api'
+import useAuthStore from '../store/authStore'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const { initAuth } = useAuthStore()
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // Supabase internally handles the hash/code exchange via onAuthStateChange,
-      // but we want to wait for it or explicitly check the session.
-      const { data: { session }, error } = await supabase.auth.getSession()
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get('token');
 
-      if (error) {
-        console.error('Callback Error:', error)
-        setError(error.message)
-        return
+      if (isLocalMode() && token) {
+        try {
+          localStorage.setItem('ridesync_token', token);
+          await initAuth();
+          navigate('/dashboard');
+          return;
+        } catch (err: any) {
+          setError('Failed to establish local session');
+          return;
+        }
       }
 
-      if (session) {
-        // Success! Redirect to the dashboard with a success flag
-        setTimeout(() => {
-          navigate('/dashboard?verified=true')
-        }, 2000)
-      } else {
-        // If no session, it might be an error or they just landed here manually
-        setError('Verification link may have expired or is invalid.')
+      // Fallback to Supabase logic
+      try {
+        const { data: { session }, error: supabaseError } = await supabase.auth.getSession()
+        if (supabaseError) throw supabaseError;
+        
+        if (session) {
+          navigate('/dashboard?verified=true');
+        } else {
+          setError('Verification link may have expired or is invalid.');
+        }
+      } catch (err: any) {
+        console.error('Callback Error:', err);
+        setError(err.message);
       }
     }
 
     handleAuthCallback()
-  }, [navigate])
+  }, [navigate, initAuth])
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6">

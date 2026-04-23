@@ -1,81 +1,86 @@
 # RideSync 🚗🇮🇳
 
 ## Overview
-RideSync is a modern, responsive web application designed for users to find, create, and share rides. The app strongly emphasizes the idea of community travel ("Syncing with Bharat") and offers seamless location tracking, ride matching, and a vibrant community interface.
+RideSync is a production-grade, responsive web application designed for users to find, create, and share rides. The platform features a unique "Tactical HUD" for riders, high-accuracy GPS tracking, and deep community integration, optimized for the rugged conditions of cross-country travel.
 
 ## Tech Stack
 - **Framework:** React 19 with Vite, TypeScript
-- **Styling:** Tailwind CSS, Framer Motion (for animations), PostCSS
+- **Backend:** Node.js Express Server (Local/Hybrid)
+- **Database:** PostgreSQL with **Prisma ORM**
+- **Auth:** Google OAuth 2.0 & Local Email/Password (JWT)
+- **Styling:** Tailwind CSS, Framer Motion
 - **State Management:** Zustand
-- **Routing:** React Router v7
 - **Maps:** Leaflet & React-Leaflet
-- **Backend as a Service:** Supabase (Auth, Database, Postgres schemas)
+- **GIS Logic:** Turf.js (for high-precision spatial analysis)
 
-## Features
-- **User Authentication:** Sign up, log in, and secure auth flows powered by Supabase.
-- **Rides & Mapping:** Find rides, view available trips via Leaflet maps, and publish your own rides.
-- **Communities:** Discover groups of riders sharing common interests or general travel routes. Join groups and participate.
-- **Interactive UI:** Smooth transitions and glassmorphic designs, optimized with a custom Tailwind theme configuration (`indigo-royal`, `saffron-vibrant`, etc).
+## 🛰️ Strategic Features
 
-## Folder Structure & Architecture 
+### 🏁 Tactical Ride Mode (HUD)
+- **Handlebar Ready**: Full-screen, landscape-optimized interface designed for horizontal mobile mounting.
+- **Real-time Telemetry**: Integrated speedometer and distance remaining metrics.
+- **Directional Intel**: Dynamic, high-visibility turn instructions and route progress indicators.
 
-The project follows a **Feature-Sliced Design** architecture for scalability and maintainability.
+### 📍 Local Database Integration
+- **PostgreSQL Core**: Move away from cloud-only lock-in with a robust local PostgreSQL setup.
+- **Prisma Powered**: Type-safe database queries and automated migrations.
+- **Hybrid Support**: Toggle between Local API and Supabase via environment variables.
 
-```text
-RideSync/
-├── public/                 # Static assets (images, icons)
-├── src/
-│   ├── components/         # Shared UI and Layout components
-│   │   ├── layout/         # Base layout wrapper, Sidebar
-│   │   ├── landing/        # Landing page specific components (Navbar)
-│   │   └── ui/             # Reusable core UI blocks (e.g. Skeleton loaders)
-│   ├── features/           # Distinct domain areas
-│   │   ├── auth/           # Login/Signup pages, Auth callbacks, ProtectedRoutes, Supabase services
-│   │   ├── community/      # Listing communities, Community Detail view, Store, and Services
-│   │   └── rides/          # Ride listing, Ride creation form, map logic, Store, and Services
-│   ├── pages/              # High-level route pages (LandingPage, DashboardPage)
-│   ├── lib/                # Third-party configuration and generic utilities (Supabase client, mockData.ts)
-│   ├── store/              # Global Zustand stores (e.g., ThemeStore)
-│   ├── App.tsx             # Main routing hub
-│   └── main.tsx            # React application entry point
-├── rides_schema.sql        # Database table definitions for Rides Module
-├── community_schema.sql    # Database table definitions for Community Module
-└── package.json            # Dependencies and scripts
+### 🛡️ Authentication 2.0
+- **Google Login**: One-tap access via Google OAuth.
+- **Secure Local Auth**: Traditional login with encrypted passwords stored locally.
+- **JWT Protection**: Secure, stateless session management.
+
+## 🛠️ Mission Setup (Local PostgreSQL)
+
+### 1. Requirements
+- Node.js & npm
+- PostgreSQL installed and running locally
+- Google Cloud Project (for OAuth keys)
+
+### 2. Installation
+```bash
+npm install
 ```
 
-## Setup & Running Locally
+### 3. Environment Intel (`.env`)
+Create a `.env` file with the following:
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/ridesync?schema=public"
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+# Auth Secrets
+JWT_SECRET="your_random_secret"
+GOOGLE_CLIENT_ID="your_google_id"
+GOOGLE_CLIENT_SECRET="your_google_secret"
 
-2. **Environment Variables:**
-   Create a `.env` file from the `.env.example` file and populate your Supabase URL and Key:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+# App Toggles
+VITE_USE_LOCAL_DB="true"
+VITE_API_URL="http://localhost:5000/api"
+FRONTEND_URL="http://localhost:5173"
+```
 
-3. **Database Setup:**
-   Run the scripts `rides_schema.sql` and `community_schema.sql` in your Supabase SQL Editor to generate the necessary tables.
+### 4. Database Deployment
+Initialize the local database and generate the Prisma Client:
+```bash
+# Push schema to local DB
+npx prisma db push
 
-4. **Start Development Server:**
-   ```bash
-   npm run dev
-   ```
-   The site will be available around `http://localhost:5173`.
+# Generate types
+npm run db:generate
+```
 
-## File Index Reference for Agent Assistants
-- **Application Entry Point:** `src/main.tsx` & `src/App.tsx` (Contains all routing constraints)
-- **Supabase Client / Keys:** `src/lib/supabase.ts` and `.env`
-- **Dashboard / Home:** `src/pages/DashboardPage.tsx`
-- **Authentication Pages:** `src/features/auth/pages/AuthPage.tsx`
-- **Rides Maps / Logic:** `src/features/rides/pages/RidesPage.tsx` and `src/features/rides/pages/CreateRidePage.tsx`
-- **Theme Global States:** `src/store/themeStore.ts`
-- **Mock Fallback Data:** `src/lib/mockData.ts` (Used when Supabase calls fail or are uninitialized)
+### 5. Launch Protocol
+Start both the Frontend and the Express Backend concurrently:
+```bash
+npm run dev:all
+```
 
-## ?? Version 2.0 (Latest Release)
-- **Production Integration**: Fully connected Supabase backend.
-- **Tactical Map Core**: Dynamic waypoint management.
-- **Branded Evolution**: Sidebar and UI overhauled with Tactical/Asphalt theme.
+## 📁 Project Structure
+- `src/`: React frontend (FSD-inspired architecture)
+- `server/`: Express backend API with Passport.js & Prisma
+- `prisma/`: Database schema and migration logs
+
+## 📊 Current Status (April 2026)
+- **Local DB Integration**: COMPLETED.
+- **Auth Transition**: Google OAuth and Local Password auth active.
+- **Version 3.5**: Full local-stack readiness.

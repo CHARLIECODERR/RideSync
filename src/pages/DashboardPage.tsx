@@ -61,7 +61,7 @@ export default function DashboardPage() {
           <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase italic leading-none">
             Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || 'Rider'}</span>
           </h1>
-          <p className="text-lg text-muted-foreground font-medium">The road is calling. Your tactical summary is ready.</p>
+          <p className="text-lg text-muted-foreground font-medium">The road is calling. Here's your ride overview.</p>
         </motion.div>
         <motion.div variants={item} className="flex items-center gap-3">
           <button 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
             onClick={() => navigate('/create-ride')}
           >
             <Plus size={20} />
-            <span>Create Mission</span>
+            <span>Create Ride</span>
           </button>
         </motion.div>
       </div>
@@ -103,7 +103,7 @@ export default function DashboardPage() {
             <motion.div variants={item} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h2 className="text-2xl font-black tracking-tight uppercase italic">Active Operations</h2>
+                <h2 className="text-2xl font-black tracking-tight uppercase italic">Active Rides</h2>
               </div>
             </motion.div>
 
@@ -127,14 +127,14 @@ export default function DashboardPage() {
                     <h3 className="text-xl font-black mb-1 group-hover:text-primary transition-colors uppercase italic">{ride.name}</h3>
                     <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-tighter">{ride.community_name}</p>
                     <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between text-[10px] font-black text-primary uppercase">
-                      <span>ENGAGE TRACKER</span>
+                      <span>View Map</span>
                       <ArrowRight size={14} />
                     </div>
                   </motion.div>
                 ))
               ) : (
                 <motion.div variants={item} className="col-span-full p-12 rounded-[2.5rem] bg-muted/20 border-2 border-dashed border-border/50 text-center flex flex-col items-center justify-center gap-4">
-                  <p className="text-xs font-black text-muted-foreground uppercase">No active operations currently detected.</p>
+                  <p className="text-xs font-black text-muted-foreground uppercase">No active rides at the moment.</p>
                 </motion.div>
               )}
             </div>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
             <motion.div variants={item} className="flex items-center justify-between border-b border-border/50 pb-4">
               <h2 className="text-2xl font-black tracking-tight uppercase italic flex items-center gap-3">
                 <Navigation size={24} className="text-primary" />
-                Planned Routes
+                Upcoming Rides
               </h2>
             </motion.div>
 
@@ -174,7 +174,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <motion.div variants={item} className="col-span-full p-12 rounded-[2.5rem] bg-muted/20 border-2 border-dashed border-border/50 text-center">
-                  <p className="text-xs font-black text-muted-foreground uppercase italic underline cursor-pointer" onClick={() => navigate('/create-ride')}>Click to initiate new mission</p>
+                  <p className="text-xs font-black text-muted-foreground uppercase italic underline cursor-pointer" onClick={() => navigate('/create-ride')}>Create your first ride here</p>
                 </motion.div>
               )}
             </div>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
         {/* Sidebar */}
         <motion.div variants={item} className="space-y-8">
           <section className="bg-card/30 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-6 shadow-rugged">
-            <h3 className="text-xl font-black uppercase italic mb-6 tracking-tight">The Brotherhood</h3>
+            <h3 className="text-xl font-black uppercase italic mb-6 tracking-tight">Communities</h3>
             <div className="space-y-3">
               {loading ? (
                 Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)
@@ -201,6 +201,7 @@ export default function DashboardPage() {
           </section>
         </motion.div>
       </div>
+
     </motion.div>
   )
 }
