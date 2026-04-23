@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { api, isLocalMode } from '@/lib/api'
+
 
 export interface Community {
   id: string
@@ -24,6 +26,11 @@ export interface CommunityMember {
 
 export const communityService = {
   async listCommunities() {
+    if (isLocalMode()) {
+      const { data } = await api.get('/communities')
+      return data
+    }
+
     const { data, error } = await supabase
       .from('communities')
       .select(`

@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { api, isLocalMode } from '@/lib/api'
+
 
 export interface Ride {
   id: string
@@ -34,6 +36,17 @@ export interface RideStop {
 
 export const rideService = {
   async createRide(rideData: Partial<Ride>, routeData: RideRoute, stops: RideStop[]) {
+    if (isLocalMode()) {
+       const { data: userData } = await supabase.auth.getUser() // Still use supabase for auth for now or mock it
+       const response = await api.post('/rides', { 
+         ride: rideData, 
+         route: routeData, 
+         stops,
+         creator_id: userData.user?.id 
+       });
+       return response.data;
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Unauthorized')
 
@@ -104,6 +117,11 @@ export const rideService = {
   },
 
   async listAllRides() {
+    if (isLocalMode()) {
+      const { data } = await api.get('/rides')
+      return data
+    }
+
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -119,6 +137,11 @@ export const rideService = {
   },
 
   async getRideDetails(rideId: string) {
+    if (isLocalMode()) {
+      const { data } = await api.get(`/rides/${rideId}`)
+      return data
+    }
+
     const { data: ride, error: rideError } = await supabase
       .from('rides')
       .select(`

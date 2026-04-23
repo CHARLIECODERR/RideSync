@@ -11,7 +11,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('')
   const [isVerificationSent, setIsVerificationSent] = useState(false)
   
-  const { login, signup, isLoading, error, clearError } = useAuth()
+  const { login, signup, loginWithGoogle, isLoading, error, clearError } = useAuth()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -32,15 +32,12 @@ export default function AuthPage() {
       if (success) navigate('/dashboard')
     } else {
       const success = await signup(name, email, password)
-      if (success) {
-        setIsVerificationSent(true)
-      }
+      if (success) navigate('/dashboard')
     }
   }
 
   const toggleAuth = () => {
     setIsLogin(!isLogin)
-    setIsVerificationSent(false)
     clearError()
   }
 
@@ -243,6 +240,24 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border"></span>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
+              <span className="bg-background px-4 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => loginWithGoogle()}
+            className="w-full py-4 rounded-2xl bg-muted/30 border border-border flex items-center justify-center gap-3 font-bold hover:bg-muted/50 transition-all"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/smartlock/google.svg" alt="Google" className="h-5 w-5" />
+            Sign in with Google
+          </button>
+
 
           <div className="text-center pt-4">
             <p className="text-muted-foreground font-medium">
