@@ -16,7 +16,8 @@ export default function TacticalRideView() {
     currentUserLocation, 
     navigationMetadata, 
     setRideMode,
-    endRide
+    endRide,
+    otherRiders
   } = useRideStore()
   
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -30,7 +31,7 @@ export default function TacticalRideView() {
 
   if (!activeRide) return null
 
-  const markers = [
+  const markers: any[] = [
     { 
       id: 'currentUser', 
       lat: currentUserLocation?.lat || 0, 
@@ -38,6 +39,13 @@ export default function TacticalRideView() {
       type: 'other' as const, 
       name: 'YOU' 
     },
+    ...Object.values(otherRiders).map(r => ({
+      id: r.userId,
+      lat: r.location.lat,
+      lng: r.location.lng,
+      type: 'other' as const,
+      name: r.name
+    })),
     ...(activeRide.stops || []).map((s: any) => ({
       id: s.id,
       lat: s.location.lat,

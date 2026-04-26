@@ -15,7 +15,9 @@ interface AuthState {
   signup: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   loginWithGoogle: () => void
+  updateProfile: (data: Partial<Profile>) => Promise<void>
   clearError: () => void
+
   initAuth: () => Promise<void>
 }
 
@@ -142,7 +144,22 @@ const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, isAuthenticated: false, isLoading: false })
   },
 
+  updateProfile: async (updateData: Partial<Profile>) => {
+    set({ isLoading: true, error: null })
+    if (isLocalMode()) {
+       try {
+         const { data } = await api.patch('/auth/profile', updateData);
+         set({ user: data.user, isLoading: false });
+         localStorage.setItem('ridesync_user', JSON.stringify(data.user));
+       } catch (err: any) {
+         set({ error: err.response?.data?.error || 'Update failed', isLoading: false });
+         throw err;
+       }
+    }
+  },
+
   clearError: () => set({ error: null }),
+
 }))
 
 export default useAuthStore

@@ -37,12 +37,10 @@ export interface RideStop {
 export const rideService = {
   async createRide(rideData: Partial<Ride>, routeData: RideRoute, stops: RideStop[]) {
     if (isLocalMode()) {
-       const { data: userData } = await supabase.auth.getUser() // Still use supabase for auth for now or mock it
        const response = await api.post('/rides', { 
          ride: rideData, 
          route: routeData, 
-         stops,
-         creator_id: userData.user?.id 
+         stops
        });
        return response.data;
     }
@@ -51,8 +49,7 @@ export const rideService = {
     if (!userData.user) throw new Error('Unauthorized')
 
     const rideCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-
-    // 1. Create Ride
+    // ... rest of supabase implementation
     const { data: ride, error: rideError } = await supabase
       .from('rides')
       .insert([{
@@ -70,7 +67,6 @@ export const rideService = {
 
     if (rideError) throw rideError
 
-    // 2. Create Route
     const { error: routeError } = await supabase
       .from('ride_routes')
       .insert([{
@@ -85,7 +81,6 @@ export const rideService = {
 
     if (routeError) throw routeError
 
-    // 3. Create Stops
     if (stops.length > 0) {
       const stopsToInsert = stops.map((s, index) => ({
         ride_id: ride.id,
@@ -98,11 +93,9 @@ export const rideService = {
       const { error: stopsError } = await supabase
         .from('ride_stops')
         .insert(stopsToInsert)
-
       if (stopsError) throw stopsError
     }
 
-    // 4. Add Creator as Lead Participant
     const { error: participantError } = await supabase
       .from('ride_participants')
       .insert([{
@@ -112,7 +105,6 @@ export const rideService = {
       }])
 
     if (participantError) throw participantError
-
     return ride as Ride
   },
 
@@ -158,6 +150,11 @@ export const rideService = {
   },
 
   async listCommunityRides(communityId: string) {
+    if (isLocalMode()) {
+      const { data } = await api.get(`/communities/${communityId}/rides`)
+      return data
+    }
+
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -172,8 +169,13 @@ export const rideService = {
     return data
   },
   
-  // ... other methods kept for compatibility
-  async joinRide(rideId: string) {
+  async joinRide(code: string) {
+    if (isLocalMode()) {
+      const { data } = await api.post(`/rides/join-by-code`, { code })
+      return data
+    }
+
+
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Unauthorized')
 
@@ -189,6 +191,11 @@ export const rideService = {
   },
 
   async updateRideStatus(rideId: string, status: 'Planned' | 'Active' | 'Completed' | 'Cancelled') {
+    if (isLocalMode()) {
+      const { data } = await api.patch(`/rides/${rideId}/status`, { status })
+      return data
+    }
+
     const { error } = await supabase
       .from('rides')
       .update({ status })
@@ -198,6 +205,11 @@ export const rideService = {
   },
 
   async deleteRide(rideId: string) {
+    if (isLocalMode()) {
+      await api.delete(`/rides/${rideId}`)
+      return
+    }
+
     const { error } = await supabase
       .from('rides')
       .delete()
@@ -206,3 +218,4 @@ export const rideService = {
     if (error) throw error
   }
 }
+

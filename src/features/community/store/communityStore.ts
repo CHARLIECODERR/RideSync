@@ -15,8 +15,12 @@ interface CommunityState {
   loadCommunity: (id: string) => Promise<void>
   createCommunity: (name: string, description: string) => Promise<Community | null>
   joinCommunity: (id: string) => Promise<void>
+  joinByCode: (code: string) => Promise<Community | null>
   leaveCommunity: (id: string) => Promise<void>
+  removeMember: (userId: string) => Promise<void>
+  addMemberByEmail: (email: string) => Promise<void>
   updateMemberRole: (userId: string, role: 'Admin' | 'Arranger' | 'Rider') => Promise<void>
+
   
   // Helpers
   isAdmin: () => boolean
@@ -88,6 +92,19 @@ const useCommunityStore = create<CommunityState>((set, get) => ({
     }
   },
 
+  joinByCode: async (code: string) => {
+    set({ isLoading: true, error: null })
+    try {
+      const community = await communityService.joinCommunityByCode(code)
+      set({ isLoading: false })
+      return community
+    } catch (e: any) {
+      set({ error: e.response?.data?.error || e.message, isLoading: false })
+      return null
+    }
+  },
+
+
   leaveCommunity: async (id) => {
     set({ isLoading: true, error: null })
     try {
@@ -98,7 +115,35 @@ const useCommunityStore = create<CommunityState>((set, get) => ({
     }
   },
 
+  removeMember: async (userId: string) => {
+    const { activeCommunity } = get()
+    if (!activeCommunity) return
+    try {
+      await communityService.removeMember(activeCommunity.id, userId)
+      set((state) => ({
+        activeMembers: state.activeMembers.filter(m => m.user_id !== userId)
+      }))
+    } catch (e: any) {
+      set({ error: e.message })
+    }
+  },
+
+  addMemberByEmail: async (email: string) => {
+    const { activeCommunity } = get()
+    if (!activeCommunity) return
+    set({ isLoading: true, error: null })
+    try {
+      await communityService.addMemberByEmail(activeCommunity.id, email)
+      const members = await communityService.getMembers(activeCommunity.id)
+      set({ activeMembers: members, isLoading: false })
+    } catch (e: any) {
+      set({ error: e.response?.data?.error || e.message, isLoading: false })
+      throw e
+    }
+  },
+
   updateMemberRole: async (userId, role) => {
+
     const { activeCommunity } = get()
     if (!activeCommunity) return
 

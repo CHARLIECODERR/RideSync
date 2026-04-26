@@ -34,6 +34,7 @@ model Community {
   name        String
   description String?
   created_by  String?
+  join_code   String?  @unique
   created_at  DateTime @default(now())
 
   creator     Profile?          @relation("CommunityCreator", fields: [created_by], references: [id], onDelete: SetNull)
@@ -42,6 +43,7 @@ model Community {
 
   @@map("communities")
 }
+
 
 model CommunityMember {
   community_id String

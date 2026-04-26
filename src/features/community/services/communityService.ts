@@ -7,11 +7,13 @@ export interface Community {
   name: string
   description: string | null
   created_by: string | null
+  join_code?: string
   created_at: string
   members_count?: number
   rides_count?: number
   user_role?: 'Admin' | 'Arranger' | 'Rider'
 }
+
 
 export interface CommunityMember {
   community_id: string
@@ -49,6 +51,11 @@ export const communityService = {
   },
 
   async getCommunity(id: string) {
+    if (isLocalMode()) {
+      const { data } = await api.get(`/communities/${id}`)
+      return data
+    }
+
     const { data, error } = await supabase
       .from('communities')
       .select(`
@@ -68,6 +75,11 @@ export const communityService = {
   },
 
   async createCommunity(name: string, description: string) {
+    if (isLocalMode()) {
+      const { data } = await api.post('/communities', { name, description })
+      return data as Community
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Authorized')
 
@@ -87,6 +99,11 @@ export const communityService = {
   },
 
   async addMember(communityId: string, userId: string, role: 'Admin' | 'Arranger' | 'Rider' = 'Rider') {
+    if (isLocalMode()) {
+      const { data } = await api.post(`/communities/${communityId}/members`, { userId, role })
+      return data
+    }
+
     const { data, error } = await supabase
       .from('community_members')
       .insert([{ 
@@ -102,6 +119,11 @@ export const communityService = {
   },
 
   async leaveCommunity(communityId: string) {
+    if (isLocalMode()) {
+      await api.delete(`/communities/${communityId}/members/me`)
+      return
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Unauthorized')
 
@@ -115,6 +137,11 @@ export const communityService = {
   },
 
   async getMembers(communityId: string) {
+    if (isLocalMode()) {
+      const { data } = await api.get(`/communities/${communityId}/members`)
+      return data
+    }
+
     const { data, error } = await supabase
       .from('community_members')
       .select(`
@@ -128,6 +155,11 @@ export const communityService = {
   },
 
   async updateMemberRole(communityId: string, userId: string, role: 'Admin' | 'Arranger' | 'Rider') {
+    if (isLocalMode()) {
+      const { data } = await api.patch(`/communities/${communityId}/members/${userId}`, { role })
+      return data
+    }
+
     const { data, error } = await supabase
       .from('community_members')
       .update({ role })
@@ -140,7 +172,39 @@ export const communityService = {
     return data
   },
 
+  async removeMember(communityId: string, userId: string) {
+    if (isLocalMode()) {
+      await api.delete(`/communities/${communityId}/members/${userId}`);
+      return;
+    }
+    const { error } = await supabase
+      .from('community_members')
+      .delete()
+      .eq('community_id', communityId)
+      .eq('user_id', userId)
+
+    if (error) throw error
+  },
+
+  async addMemberByEmail(communityId: string, email: string) {
+    if (isLocalMode()) {
+      const { data } = await api.post(`/communities/${communityId}/members`, { email });
+      return data;
+    }
+    throw new Error('Action only supported in local mode currently.');
+  },
+
   async getMyRole(communityId: string) {
+
+    if (isLocalMode()) {
+      try {
+        const { data } = await api.get(`/communities/${communityId}/members/me`)
+        return data.role as 'Admin' | 'Arranger' | 'Rider'
+      } catch (err) {
+        return null
+      }
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) return null
 
@@ -153,5 +217,23 @@ export const communityService = {
 
     if (error) return null
     return data.role as 'Admin' | 'Arranger' | 'Rider'
+  },
+
+  async joinCommunityByCode(code: string) {
+    if (isLocalMode()) {
+       const { data } = await api.post('/communities/join', { code });
+       return data;
+    }
+    // Supabase logic (can be added if needed, but primary focus is local)
+    const { data, error } = await supabase
+      .from('communities')
+      .select('id')
+      .eq('join_code', code)
+      .single();
+    
+    if (error) throw error;
+    return this.addMember(data.id, (await supabase.auth.getUser()).data.user?.id || '');
   }
 }
+
+

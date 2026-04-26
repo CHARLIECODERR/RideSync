@@ -68,14 +68,26 @@ export default function CommunitiesPage() {
           <p className="text-white/40 text-xl font-bold max-w-xl">Find your tribe. Join a legacy or establish your own brotherhood on the asphalt.</p>
         </div>
         
-        <button 
-          onClick={() => setIsCreateOpen(true)}
-          className="group relative flex items-center gap-4 px-8 py-5 bg-saffron text-white font-black uppercase tracking-tighter hover:bg-orange-600 transition-all skew-x-[-15deg] shadow-2xl shadow-saffron/20"
-        >
-          <div className="skew-x-[15deg] flex items-center gap-2">
-            <Plus size={20} /> Establish Club
-          </div>
-        </button>
+        <div className="flex flex-wrap gap-4">
+          <button 
+            onClick={() => navigate('/join?type=community')}
+            className="group relative flex items-center gap-4 px-8 py-5 bg-white/5 border border-white/10 text-white font-black uppercase tracking-tighter hover:bg-white/10 transition-all skew-x-[-15deg]"
+          >
+            <div className="skew-x-[15deg] flex items-center gap-2 text-white/60 group-hover:text-white">
+              <Users size={20} /> Join Club
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => setIsCreateOpen(true)}
+            className="group relative flex items-center gap-4 px-8 py-5 bg-saffron text-white font-black uppercase tracking-tighter hover:bg-orange-600 transition-all skew-x-[-15deg] shadow-2xl shadow-saffron/20"
+          >
+            <div className="skew-x-[15deg] flex items-center gap-2">
+              <Plus size={20} /> Establish Club
+            </div>
+          </button>
+        </div>
+
       </div>
 
       {/* Search Bar - Rugged Style */}

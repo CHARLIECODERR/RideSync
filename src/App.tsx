@@ -11,7 +11,9 @@ import CommunityDetailPage from '@/features/community/pages/CommunityDetailPage'
 import AuthPage from '@/features/auth/pages/AuthPage'
 import ProfilePage from '@/features/auth/pages/ProfilePage'
 import AuthCallbackPage from '@/features/auth/pages/AuthCallbackPage'
+import JoinPage from '@/pages/JoinPage'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
+
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useThemeStore } from '@/store/themeStore'
 import { useEffect } from 'react'
@@ -52,8 +54,9 @@ function App() {
           <Route path="communities" element={<CommunitiesPage />} />
           <Route path="communities/:id" element={<CommunityDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="join" element={<div>Join Ride Page Placeholder</div>} />
+          <Route path="join" element={<JoinPage />} />
         </Route>
+
       </Route>
       
       {/* Auth routes */}
