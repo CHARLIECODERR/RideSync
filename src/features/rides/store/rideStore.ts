@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { rideService, RideRoute, RideStop, Ride as ServiceRide } from '../services/rideService'
 import * as turf from '@turf/turf'
+import { socketService } from '@/services/socketService'
 
 export interface Ride {
   id: string
@@ -19,6 +20,7 @@ export interface Ride {
   stops?: any[]
   route?: any
   created_at?: string
+  otherRiders?: Record<string, { userId: string, name: string, location: { lat: number, lng: number, speed?: number, heading?: number }, lastUpdate: number }>
 }
 
 export interface Participant {
@@ -68,6 +70,8 @@ interface RideState {
   setRideMode: (active: boolean) => void
   updateNavigationMetadata: (meta: any) => void
   currentUserLocation: { lat: number, lng: number } | null
+  otherRiders: Record<string, { userId: string, name: string, location: { lat: number, lng: number, speed?: number, heading?: number }, lastUpdate: number }>
+  updateOtherRiderLocation: (data: any) => void
   watchId: number | null
 }
 
@@ -81,6 +85,7 @@ const useRideStore = create<RideState>((set, get) => ({
   navigationMetadata: null,
   locationSimInterval: null,
   currentUserLocation: null,
+  otherRiders: {},
   watchId: null,
 
   fetchRides: async () => {
@@ -171,6 +176,18 @@ const useRideStore = create<RideState>((set, get) => ({
         ),
       }))
 
+      // Socket Integration
+      const user = JSON.parse(localStorage.getItem('ridesync_user') || '{}');
+      socketService.joinRide(rideId, user);
+      
+      socketService.onLocationUpdated((data) => {
+        get().updateOtherRiderLocation(data);
+      });
+
+      socketService.onRiderJoined((data) => {
+        console.log('Tactical Alert: Rider joined the pack:', data.name);
+      });
+
       if ("geolocation" in navigator) {
         const id = navigator.geolocation.watchPosition(
           (position) => {
@@ -206,6 +223,14 @@ const useRideStore = create<RideState>((set, get) => ({
                 console.error('Navigation calculation failed', e)
               }
             }
+
+            // Broadcast location to the pack
+            const user = JSON.parse(localStorage.getItem('ridesync_user') || '{}');
+            socketService.updateLocation(rideId, user.id, user.name, {
+              lat: latitude,
+              lng: longitude,
+              speed: currentSpeed
+            });
           },
           (error) => {
             console.error('CRITICAL: Tracking lost', error)
@@ -231,6 +256,11 @@ const useRideStore = create<RideState>((set, get) => ({
           r.id === rideId ? { ...r, status: 'Completed' as const, end_time: new Date().toISOString() } : r
         ),
       }))
+      
+      // Socket Cleanup
+      const user = JSON.parse(localStorage.getItem('ridesync_user') || '{}');
+      socketService.leaveRide(rideId, user.id);
+      socketService.disconnect();
     } catch (error) {
       console.error('Failed to end ride', error)
     } finally {
@@ -243,18 +273,22 @@ const useRideStore = create<RideState>((set, get) => ({
     }
   },
 
-  joinRide: async (rideCode: string) => {
-    const ride = get().rides.find(r => r.ride_code === rideCode)
-    if (ride) {
+  joinRide: async (code: string) => {
+    set({ isLoading: true })
+    try {
+      const ride = await rideService.joinRide(code)
       set((state) => ({
-        rides: state.rides.map(r =>
-          r.id === ride.id ? { ...r, participants: r.participants + 1 } : r
-        ),
+        rides: [ride, ...state.rides],
+        isLoading: false
       }))
       return ride
+    } catch (error: any) {
+      console.error('Join ride failed', error)
+      set({ isLoading: false })
+      throw error
     }
-    return null
   },
+
 
   approveParticipant: (userId: string) => {
     set((state) => ({
@@ -299,6 +333,21 @@ const useRideStore = create<RideState>((set, get) => ({
       set({ isLoading: false })
       throw error
     }
+  },
+
+  updateOtherRiderLocation: (data) => {
+    const { userId, name, location, timestamp } = data;
+    set((state) => ({
+      otherRiders: {
+        ...state.otherRiders,
+        [userId]: {
+          userId,
+          name,
+          location,
+          lastUpdate: timestamp || Date.now()
+        }
+      }
+    }));
   },
 
   setRideMode: (active: boolean) => set({ isRideModeActive: active }),

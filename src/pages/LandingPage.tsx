@@ -92,14 +92,18 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {[
-              { icon: <Users size={32} />, title: "Community Sync", desc: "Found a club. Join a crew. Rise through the ranks from Rider to Founder." },
-              { icon: <MapPin size={32} />, title: "Route Planning", desc: "No more messy WhatsApp pins. Dedicated waypoints for fuel and fuel for the soul." },
-              { icon: <Wrench size={32} />, title: "Mechanical SOS", desc: "Breakdown in the middle of nowhere? Signal the nearby brotherhood for back-up." },
-              { icon: <Shield size={32} />, title: "Ride Vetting", desc: "Know who you're riding with. Verified profiles and safety ratings for every member." },
-              { icon: <Zap size={32} />, title: "Real-time Pings", desc: "Instant alerts for road hazards, police checkpoints, and hidden gems." },
-              { icon: <Calendar size={32} />, title: "Club Events", desc: "Coordinate meetups, anniversary rides, and long-haul expeditions with ease." }
+              { icon: <Users size={32} />, title: "Community Sync", desc: "Found a club. Join a crew. Rise through the ranks from Rider to Founder.", to: '/communities' },
+              { icon: <MapPin size={32} />, title: "Route Planning", desc: "No more messy WhatsApp pins. Dedicated waypoints for fuel and fuel for the soul.", to: '/create-ride' },
+              { icon: <Wrench size={32} />, title: "Mechanical SOS", desc: "Breakdown in the middle of nowhere? Signal the nearby brotherhood for back-up.", to: '/dashboard' },
+              { icon: <Shield size={32} />, title: "Ride Vetting", desc: "Know who you're riding with. Verified profiles and safety ratings for every member.", to: '/profile' },
+              { icon: <Zap size={32} />, title: "Real-time Pings", desc: "Instant alerts for road hazards, police checkpoints, and hidden gems.", to: '/rides' },
+              { icon: <Calendar size={32} />, title: "Club Events", desc: "Coordinate meetups, anniversary rides, and long-haul expeditions with ease.", to: '/communities' }
             ].map((f, i) => (
-              <div key={i} className="p-12 bg-muted/30 border border-border/50 hover:bg-muted/50 hover:border-saffron/30 transition-all group relative overflow-hidden">
+              <button 
+                key={i} 
+                onClick={() => navigate(f.to)}
+                className="p-12 bg-muted/30 border border-border/50 hover:bg-muted/50 hover:border-saffron/30 transition-all group relative overflow-hidden text-left"
+              >
                 <div className="relative z-10 space-y-6">
                   <div className="text-saffron group-hover:scale-110 transition-transform duration-500">{f.icon}</div>
                   <h3 className="text-2xl font-black uppercase tracking-tighter">{f.title}</h3>
@@ -108,8 +112,9 @@ export default function LandingPage() {
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                    <div className="text-8xl font-black italic">{i + 1}</div>
                 </div>
-              </div>
+              </button>
             ))}
+
           </div>
         </div>
       </section>
@@ -150,24 +155,23 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-20">
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-saffron">The Hub</h4>
               <ul className="space-y-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                <li><a href="#" className="hover:text-foreground">Active Rides</a></li>
-                <li><a href="#" className="hover:text-foreground">Find a Club</a></li>
-                <li><a href="#" className="hover:text-foreground">The Garage</a></li>
+                <li><button onClick={() => navigate('/rides')} className="hover:text-foreground">Active Rides</button></li>
+                <li><button onClick={() => navigate('/communities')} className="hover:text-foreground">Find a Club</button></li>
+                <li><button onClick={() => navigate('/dashboard')} className="hover:text-foreground">The Garage</button></li>
               </ul>
             </div>
             <div className="space-y-6">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-saffron">Legal</h4>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-saffron">Base Ops</h4>
               <ul className="space-y-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                <li><a href="#" className="hover:text-foreground">Asphalt Code</a></li>
-                <li><a href="#" className="hover:text-foreground">Privacy</a></li>
-                <li><a href="#" className="hover:text-foreground">Terms</a></li>
+                <li><button onClick={() => navigate('/join')} className="hover:text-foreground">Join Mission</button></li>
+                <li><button onClick={() => navigate('/profile')} className="hover:text-foreground">Profile Intel</button></li>
+                <li><button onClick={() => navigate('/create-ride')} className="hover:text-foreground">Start Expedition</button></li>
               </ul>
             </div>
-          </div>
+
         </div>
       </footer>
     </div>

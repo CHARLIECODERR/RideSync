@@ -6,7 +6,7 @@ import {
   Zap, Shield, Navigation, Milestone,
   ChevronRight, AlertTriangle, Play,
   CheckCircle2, Info, Trash2, Loader2,
-  Maximize2
+  Maximize2, Share2, Link as LinkIcon, Check, Plus, ArrowRight
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useRideStore from '../store/rideStore'
@@ -34,6 +34,46 @@ export default function RideDetailPage() {
   const [ride, setRide] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+
+  const handleCopyLink = () => {
+    if (!ride?.ride_code) return
+    const url = `${window.location.origin}/join?type=ride&code=${ride.ride_code}`
+    navigator.clipboard.writeText(url)
+    setCopied('link')
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleCopyCode = () => {
+    if (!ride?.ride_code) return
+    navigator.clipboard.writeText(ride.ride_code)
+    setCopied('code')
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleStartRide = async () => {
+    if (!ride?.id) return
+    try {
+      await startRide(ride.id)
+      // Refresh local state
+      const data = await rideService.getRideDetails(ride.id)
+      setRide(data)
+    } catch (err) {
+      console.error('Start failed:', err)
+    }
+  }
+
+  const handleEndRide = async () => {
+    if (!ride?.id) return
+    try {
+      await endRide(ride.id)
+      // Refresh local state
+      const data = await rideService.getRideDetails(ride.id)
+      setRide(data)
+    } catch (err) {
+      console.error('End failed:', err)
+    }
+  }
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this mission? This action cannot be undone.')) return
@@ -42,14 +82,15 @@ export default function RideDetailPage() {
       if (!ride?.id) return
       await deleteRide(ride.id)
       navigate('/rides')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete failed:', err)
-      alert('Failed to delete mission intel.')
+      alert(err.response?.data?.error || 'Failed to delete mission intel.')
     }
   }
 
   const markers = useMemo(() => {
     if (!ride) return []
+    // Route can be an array from Prisma or single object from Supabase
     const routeInfo = Array.isArray(ride.route) ? ride.route[0] : ride.route
     
     const baseMarkers = [
@@ -104,11 +145,11 @@ export default function RideDetailPage() {
           const routeInfo = Array.isArray(data.route) ? data.route[0] : data.route
           setActiveRide({
             ...data,
-            community_name: data.communities?.name || 'Vanguard Command',
+            community_name: data.communities?.name || (data.community?.name) || 'Vanguard Command',
             distance: routeInfo?.distance_km ? `${routeInfo.distance_km} km` : '0.0 km',
             estimated_duration: routeInfo?.duration_mins ? `${routeInfo.duration_mins} mins` : '0 mins',
             participants: data.participants?.length || 1,
-            route: routeInfo // Ensure route is available for navigation
+            route: routeInfo
           })
         }
       } catch (err: any) {
@@ -181,10 +222,37 @@ export default function RideDetailPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-6">
+            {ride.ride_code && (
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-4 skew-x-[-10deg]">
+                <div className="skew-x-[10deg] flex items-center gap-6">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">Mission Code</p>
+                    <p className="font-mono text-xl font-black text-primary tracking-widest leading-none">{ride.ride_code}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleCopyCode}
+                      className="p-3 bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5"
+                      title="Copy Code"
+                    >
+                      {copied === 'code' ? <Check size={16} className="text-emerald-500" /> : <Share2 size={16} />}
+                    </button>
+                    <button 
+                      onClick={handleCopyLink}
+                      className="p-3 bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5"
+                      title="Copy Join Link"
+                    >
+                      {copied === 'link' ? <Check size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {ride.status === 'Planned' && (
               <button 
-                onClick={() => startRide(ride.id)}
+                onClick={handleStartRide}
                 className="group relative flex items-center gap-4 px-10 py-6 bg-emerald-600 text-white font-black uppercase tracking-tighter hover:bg-emerald-500 transition-all skew-x-[-15deg] shadow-2xl shadow-emerald-500/20"
               >
                 <div className="skew-x-[15deg] flex items-center gap-2">
@@ -192,6 +260,7 @@ export default function RideDetailPage() {
                 </div>
               </button>
             )}
+
             {ride.status === 'Active' && (
               <>
                 <button 
@@ -203,7 +272,7 @@ export default function RideDetailPage() {
                   </div>
                 </button>
                 <button 
-                  onClick={() => endRide(ride.id)}
+                  onClick={handleEndRide}
                   className="group relative flex items-center gap-4 px-10 py-6 bg-red-600 text-white font-black uppercase tracking-tighter hover:bg-red-500 transition-all skew-x-[-15deg] shadow-2xl shadow-red-500/20"
                 >
                   <div className="skew-x-[15deg] flex items-center gap-2">
@@ -226,6 +295,7 @@ export default function RideDetailPage() {
           </div>
         </div>
       </div>
+
 
       {/* Main Mission Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 xl:h-[calc(100vh-400px)] min-h-[600px]">

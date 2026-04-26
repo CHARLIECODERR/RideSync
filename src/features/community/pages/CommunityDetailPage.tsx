@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Users, MapPin, Calendar, Shield, 
-  Settings, ArrowLeft, Plus, Zap, LogOut, ShieldCheck, ArrowRight
+  Settings, ArrowLeft, Plus, Zap, LogOut, ShieldCheck, ArrowRight,
+  Share2, Link as LinkIcon, Check
 } from 'lucide-react'
 import useCommunityStore from '../store/communityStore'
 import useRideStore from '@/features/rides/store/rideStore'
@@ -26,6 +27,7 @@ export default function CommunityDetailPage() {
 
   const { rides, fetchRides, getRidesByCommunity } = useRideStore()
   const [isJoining, setIsJoining] = useState(false)
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -42,6 +44,21 @@ export default function CommunityDetailPage() {
     setIsJoining(true)
     await joinCommunity(id)
     setIsJoining(false)
+  }
+
+  const handleCopyLink = () => {
+    if (!activeCommunity?.join_code) return
+    const url = `${window.location.origin}/join?type=community&code=${activeCommunity.join_code}`
+    navigator.clipboard.writeText(url)
+    setCopied('link')
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleCopyCode = () => {
+    if (!activeCommunity?.join_code) return
+    navigator.clipboard.writeText(activeCommunity.join_code)
+    setCopied('code')
+    setTimeout(() => setCopied(null), 2000)
   }
 
   const handleLeave = async () => {
@@ -107,7 +124,34 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex flex-col items-end gap-6 shrink-0">
+            {isMember && activeCommunity.join_code && (
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-4 skew-x-[-10deg]">
+                <div className="skew-x-[10deg] flex items-center gap-6">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">Invite Code</p>
+                    <p className="font-mono text-xl font-black text-saffron tracking-widest leading-none">{activeCommunity.join_code}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleCopyCode}
+                      className="p-3 bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5"
+                      title="Copy Code"
+                    >
+                      {copied === 'code' ? <Check size={16} className="text-emerald-500" /> : <Share2 size={16} />}
+                    </button>
+                    <button 
+                      onClick={handleCopyLink}
+                      className="p-3 bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5"
+                      title="Copy Join Link"
+                    >
+                      {copied === 'link' ? <Check size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!isMember ? (
               <button 
                 onClick={handleJoin}
@@ -121,14 +165,20 @@ export default function CommunityDetailPage() {
             ) : (
               <div className="flex items-center gap-4">
                 {isArranger() && (
-                  <button className="group relative flex items-center gap-4 px-8 py-4 bg-white/5 border-2 border-white/10 text-white font-black uppercase tracking-tighter hover:bg-white/10 transition-all skew-x-[-15deg]">
-                    <div className="skew-x-[15deg] flex items-center gap-2">
+                  <button 
+                    onClick={() => navigate(`/create-ride?communityId=${id}`)}
+                    className="group relative flex items-center gap-4 px-8 py-4 bg-white/5 border-2 border-white/10 text-white font-black uppercase tracking-tighter hover:bg-white/10 transition-all skew-x-[-15deg]"
+                  >
+                    <div className="skew-x-[15deg] flex items-center gap-2 text-xs">
                       <Zap size={18} className="text-saffron" /> Organize Big Ride
                     </div>
                   </button>
                 )}
-                <button className="group relative flex items-center gap-4 px-8 py-4 bg-saffron text-white font-black uppercase tracking-tighter hover:bg-orange-600 transition-all skew-x-[-15deg]">
-                  <div className="skew-x-[15deg] flex items-center gap-2">
+                <button 
+                  onClick={() => navigate('/create-ride')}
+                  className="group relative flex items-center gap-4 px-8 py-4 bg-saffron text-white font-black uppercase tracking-tighter hover:bg-orange-600 transition-all skew-x-[-15deg]"
+                >
+                  <div className="skew-x-[15deg] flex items-center gap-2 text-xs">
                     <Plus size={18} /> New Event
                   </div>
                 </button>
@@ -137,6 +187,7 @@ export default function CommunityDetailPage() {
           </div>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         {/* Main Intel Column */}
@@ -164,11 +215,11 @@ export default function CommunityDetailPage() {
               {communityRides.length > 0 ? (
                 communityRides.map(ride => (
                   <div 
-                    key={ride.id}
-                    className="p-6 bg-white/5 border border-white/10 hover:border-saffron/30 transition-all cursor-pointer group"
+                    key={ride.id} 
                     onClick={() => navigate(`/ride/${ride.id}`)}
+                    className="group relative p-8 bg-white/5 border border-white/10 hover:border-saffron/30 transition-all cursor-pointer"
                   >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center justify-between mb-4">
                        <span className={cn(
                         "px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
                         ride.status === 'Active' ? "bg-emerald-500/10 text-emerald-500" : "bg-white/10 text-white/40"
@@ -179,9 +230,10 @@ export default function CommunityDetailPage() {
                     </div>
                     <h4 className="text-xl font-black uppercase italic group-hover:text-saffron transition-colors">{ride.name}</h4>
                     <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-black text-white/40 uppercase tracking-widest">
-                      <span>{ride.distance} • {ride.participants} RIDERS</span>
+                      <span>{ride.route?.distance_km || 0} KM • {ride._count?.participants || 0} RIDERS</span>
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </div>
+
                   </div>
                 ))
               ) : (

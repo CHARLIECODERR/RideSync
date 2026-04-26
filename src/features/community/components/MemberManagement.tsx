@@ -1,16 +1,43 @@
 import { useState } from 'react'
 import useCommunityStore from '../store/communityStore'
-import { Shield, ShieldCheck, User, MoreVertical, Trash2, Zap, ArrowRight } from 'lucide-react'
+import { Shield, ShieldCheck, User, MoreVertical, Trash2, Zap, ArrowRight, UserPlus, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function MemberManagement() {
-  const { activeMembers, updateMemberRole, isAdmin, isArranger } = useCommunityStore()
+  const { activeMembers, updateMemberRole, removeMember, addMemberByEmail, isAdmin, isArranger, isLoading: isStoreLoading } = useCommunityStore()
   const [isUpdating, setIsUpdating] = useState<string | null>(null)
+  const [showInductModal, setShowInductModal] = useState(false)
+  const [inductEmail, setInductEmail] = useState('')
+  const [inductError, setInductError] = useState<string | null>(null)
+  const [isInducting, setIsInducting] = useState(false)
 
   const handleRoleChange = async (userId: string, newRole: 'Admin' | 'Arranger' | 'Rider') => {
     setIsUpdating(userId)
     await updateMemberRole(userId, newRole)
     setIsUpdating(null)
+  }
+
+  const handleRemove = async (userId: string, name: string) => {
+    if (window.confirm(`Are you sure you want to remove ${name} from the brotherhood?`)) {
+      setIsUpdating(userId)
+      await removeMember(userId)
+      setIsUpdating(null)
+    }
+  }
+
+  const handleInduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setInductError(null)
+    setIsInducting(true)
+    try {
+      await addMemberByEmail(inductEmail)
+      setShowInductModal(false)
+      setInductEmail('')
+    } catch (err: any) {
+      setInductError(err.response?.data?.error || err.message || 'Failed to induct member')
+    } finally {
+      setIsInducting(false)
+    }
   }
 
   const getRoleIcon = (role: string) => {
@@ -38,7 +65,7 @@ export default function MemberManagement() {
         </div>
       </div>
 
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-white/5 max-h-[500px] overflow-y-auto">
         {activeMembers.map((member) => (
           <div key={member.user_id} className="p-6 hover:bg-white/[0.02] transition-all flex items-center justify-between group">
             <div className="flex items-center gap-6">
@@ -63,24 +90,34 @@ export default function MemberManagement() {
             </div>
 
             <div className="flex items-center gap-4">
-              {isAdmin() && member.role !== 'Admin' && (
-                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 duration-500">
-                  <select
-                    className="bg-black border border-white/10 rounded-none text-[10px] font-black uppercase tracking-widest py-1 px-3 outline-none focus:border-saffron transition-all appearance-none cursor-pointer"
-                    value={member.role}
-                    onChange={(e) => handleRoleChange(member.user_id, e.target.value as any)}
-                    disabled={isUpdating === member.user_id}
-                  >
-                    <option value="Rider">RIDER</option>
-                    <option value="Arranger">ARRANGER</option>
-                  </select>
-                  <button className="p-2 hover:bg-red-900 text-white/10 hover:text-white transition-all border border-transparent hover:border-red-500/50">
-                    <Trash2 size={12} />
-                  </button>
+              {isArranger() && member.role !== 'Admin' && (
+                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 duration-500">
+                  {isUpdating === member.user_id ? (
+                    <Loader2 size={16} className="animate-spin text-saffron" />
+                  ) : (
+                    <>
+                      <select
+                        className="bg-black border border-white/10 rounded-none text-[10px] font-black uppercase tracking-widest py-1 px-3 outline-none focus:border-saffron transition-all appearance-none cursor-pointer"
+                        value={member.role}
+                        onChange={(e) => handleRoleChange(member.user_id, e.target.value as any)}
+                      >
+                        <option value="Rider">RIDER</option>
+                        <option value="Arranger">ARRANGER</option>
+                        <option value="Admin">ADMIN</option>
+                      </select>
+                      <button 
+                        onClick={() => handleRemove(member.user_id, member.user_profile?.name || 'this rider')}
+                        className="p-2 hover:bg-red-900 text-white/10 hover:text-white transition-all border border-transparent hover:border-red-500/50"
+                        title="Remove Member"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
               
-              {(!isAdmin() || member.role === 'Admin') && (
+              {(!isArranger() || member.role === 'Admin') && (
                 <div className={cn(
                   "px-3 py-1 border text-[9px] font-black uppercase tracking-widest transition-all",
                   getRoleColor(member.role)
@@ -102,13 +139,61 @@ export default function MemberManagement() {
         </div>
       )}
 
-      {isAdmin() && (
+      {isArranger() && (
         <div className="p-6 bg-white/[0.02] border-t border-white/5">
-          <button className="w-full py-3 border border-dashed border-white/10 hover:border-saffron/50 hover:bg-saffron/5 text-[10px] font-black uppercase tracking-[0.4em] text-white/20 hover:text-saffron transition-all flex items-center justify-center gap-2 group">
-             Induct New Member <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+          <button 
+            onClick={() => setShowInductModal(true)}
+            className="w-full py-4 border border-dashed border-white/10 hover:border-saffron/50 hover:bg-saffron/5 text-[10px] font-black uppercase tracking-[0.4em] text-white/20 hover:text-saffron transition-all flex items-center justify-center gap-2 group"
+          >
+             <UserPlus size={14} /> Induct New Member <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
           </button>
+        </div>
+      )}
+
+      {/* Induct Modal */}
+      {showInductModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-zinc-950 border border-saffron/30 p-10 space-y-8 relative shadow-2xl">
+            <button 
+              onClick={() => setShowInductModal(false)}
+              className="absolute top-6 right-6 text-white/20 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+            <div className="space-y-2">
+              <h4 className="text-2xl font-black uppercase italic tracking-tighter">Induct <span className="text-saffron">Rider.</span></h4>
+              <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">Add a member via their registered email.</p>
+            </div>
+
+            <form onSubmit={handleInduct} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">User Email</label>
+                <input 
+                  type="email"
+                  required
+                  value={inductEmail}
+                  onChange={(e) => setInductEmail(e.target.value)}
+                  placeholder="EMAIL ADDRESS"
+                  className="w-full bg-black border border-white/10 px-5 py-4 font-bold text-sm outline-none focus:border-saffron transition-all uppercase"
+                />
+              </div>
+
+              {inductError && (
+                <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{inductError}</p>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isInducting}
+                className="w-full py-4 bg-saffron text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+              >
+                {isInducting ? <Loader2 className="animate-spin" size={16} /> : 'Establish Membership'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>
   )
 }
+

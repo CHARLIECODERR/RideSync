@@ -1,14 +1,30 @@
-import { User, Shield, Calendar, Settings, MapPin, Route } from 'lucide-react'
+import { User, Shield, Settings, MapPin, Route, CheckCircle2 as CheckIcon, X, Save } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import useRideStore from '@/features/rides/store/rideStore'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 
 export default function ProfilePage() {
-  const { user } = useAuthStore()
+  const { user, updateProfile } = useAuthStore()
   const { rides } = useRideStore()
+  const [isEditing, setIsEditing] = useState(false)
+  const [newName, setNewName] = useState(user?.name || '')
+  const [isSaving, setIsSaving] = useState(false)
 
   const completedRides = rides.filter(r => r.status === 'Completed').length
-  const activeRides = rides.filter(r => r.status === 'Active').length
+
+  const handleSave = async () => {
+    if (!newName.trim()) return
+    setIsSaving(true)
+    try {
+      await updateProfile({ name: newName })
+      setIsEditing(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -26,18 +42,62 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <h1 className="text-4xl font-black uppercase italic tracking-tighter">{user?.name}</h1>
-              <p className="text-white/40 font-bold uppercase tracking-widest text-[10px]">{user?.email}</p>
-            </div>
+            <AnimatePresence mode="wait">
+              {isEditing ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-4"
+                >
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest">Update Identity</label>
+                  <input 
+                    type="text" 
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 px-4 py-3 text-white font-black uppercase tracking-tighter outline-none focus:border-saffron/50 transition-all"
+                    placeholder="Enter new name"
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex-1 py-3 bg-saffron text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isSaving ? "Saving..." : <><Save size={14} /> Commit</>}
+                    </button>
+                    <button 
+                      onClick={() => { setIsEditing(false); setNewName(user?.name || ''); }}
+                      className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                >
+                  <h1 className="text-4xl font-black uppercase italic tracking-tighter">{user?.name}</h1>
+                  <p className="text-white/40 font-bold uppercase tracking-widest text-[10px]">{user?.email}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <p className="text-sm text-white/40 font-bold leading-relaxed italic border-l-2 border-saffron/30 pl-4">
               "The road has no prejudice. It tests every man and machine equally. Born to ride, forced to work."
             </p>
           </div>
 
-          <button className="w-full py-4 bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-3 group">
-            <Settings size={14} className="group-hover:rotate-90 transition-transform duration-500" /> Operational Tuning
-          </button>
+          {!isEditing && (
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="w-full py-4 bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-3 group"
+            >
+              <Settings size={14} className="group-hover:rotate-90 transition-transform duration-500" /> Operational Tuning
+            </button>
+          )}
         </div>
 
         {/* Stats & History */}
@@ -51,7 +111,7 @@ export default function ProfilePage() {
               </div>
               <div className="p-8 space-y-2">
                  <div className="text-saffron font-black text-[10px] uppercase tracking-[0.4em] flex items-center gap-2">
-                    <CheckCircle2 size={14} /> Completed
+                    <CheckIcon size={14} /> Completed
                  </div>
                  <div className="text-5xl font-black italic tracking-tighter">{completedRides}</div>
               </div>
@@ -70,7 +130,7 @@ export default function ProfilePage() {
                    <div key={ride.id} className="p-6 bg-zinc-950/50 border border-white/5 flex items-center justify-between group hover:bg-white/5 transition-all">
                       <div className="space-y-1">
                          <h4 className="text-sm font-black uppercase italic tracking-widest group-hover:text-saffron transition-colors">{ride.name}</h4>
-                         <p className="text-[10px] font-bold text-white/20 uppercase">{ride.status} • {ride.distance}</p>
+                         <p className="text-[10px] font-bold text-white/20 uppercase">{ride.status} • {ride.distance_km || 0} KM</p>
                       </div>
                       <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">
                          {new Date(ride.start_time).toLocaleDateString()}
@@ -88,8 +148,4 @@ export default function ProfilePage() {
       </div>
     </div>
   )
-}
-
-function CheckCircle2({ size, className }: { size?: number, className?: string }) {
-  return <Shield size={size} className={className} />
 }

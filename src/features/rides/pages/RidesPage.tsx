@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Route, Users, MapPin, Clock, Calendar, ArrowRight, Filter } from 'lucide-react'
+import { Route, Users, MapPin, Clock, Calendar, ArrowRight, Filter, Plus } from 'lucide-react'
+
 import { useState, useEffect } from 'react'
 import useRideStore, { Ride } from '@/features/rides/store/rideStore'
 import { cn } from '@/lib/utils'
@@ -37,10 +38,31 @@ export default function RidesPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-black tracking-tight">My Rides</h1>
-        <p className="text-muted-foreground">Manage and track your riding adventures.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black tracking-tight uppercase italic">My <span className="text-primary italic">Missions</span></h1>
+          <p className="text-white/40 font-bold uppercase text-[10px] tracking-[0.3em]">Operational record of all field deployments</p>
+        </div>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => navigate('/join?type=ride')}
+            className="group relative flex items-center gap-4 px-6 py-4 bg-white/5 border border-white/10 text-white font-black uppercase tracking-tighter hover:bg-white/10 transition-all skew-x-[-15deg]"
+          >
+            <div className="skew-x-[15deg] flex items-center gap-2 text-white/60 group-hover:text-white text-xs">
+              <Plus size={16} /> Join Mission
+            </div>
+          </button>
+          <button 
+            onClick={() => navigate('/create-ride')}
+            className="group relative flex items-center gap-4 px-6 py-4 bg-primary text-black font-black uppercase tracking-tighter hover:opacity-90 transition-all skew-x-[-15deg] shadow-lg shadow-primary/20"
+          >
+            <div className="skew-x-[15deg] flex items-center gap-2 text-xs">
+              <Plus size={16} /> Create Mission
+            </div>
+          </button>
+        </div>
       </div>
+
 
       <div className="flex items-center gap-2 p-1 bg-muted/50 rounded-2xl w-fit border">
         <div className="px-3 text-muted-foreground">

@@ -15,6 +15,16 @@ RideSync is a production-grade, responsive web application designed for users to
 
 ## 🛰️ Strategic Features
 
+### 📡 Live Pack Tracking
+- **Real-time WebSockets**: Powered by Socket.io for ultra-low latency location sharing.
+- **Pack Awareness**: See every member of your ride mission on the live map.
+- **Resilient Logic**: Optimized for mobile efficiency and accuracy in low-range road conditions.
+
+### 🎖️ Pack Hierarchy & Management
+- **Role Control**: Admins and Arrangers have full tactical control over member roles.
+- **Brotherhood Induction**: Induct members via email or shareable tactical codes.
+- **Mission Permission**: Granular controls over who can lead or join specific expeditions.
+
 ### 🏁 Tactical Ride Mode (HUD)
 - **Handlebar Ready**: Full-screen, landscape-optimized interface designed for horizontal mobile mounting.
 - **Real-time Telemetry**: Integrated speedometer and distance remaining metrics.
