@@ -59,8 +59,8 @@ interface RideState {
   createRide: (rideData: Partial<Ride>, routeData: RideRoute, stops: RideStop[]) => Promise<Ride>
   getRide: (id: string) => Ride | undefined
   setActiveRide: (ride: Ride | null) => void
-  startRide: (rideId: string) => void
-  endRide: (rideId: string) => void
+  startRide: (rideId: string) => Promise<void>
+  endRide: (rideId: string) => Promise<void>
   joinRide: (rideCode: string) => Promise<Ride | null>
   approveParticipant: (userId: string) => void
   sendAlert: (alert: Partial<RideAlert>) => void
@@ -170,7 +170,32 @@ const useRideStore = create<RideState>((set, get) => ({
   startRide: async (rideId: string) => {
     try {
       await rideService.updateRideStatus(rideId, 'Active')
+      
+      // Fetch full details (including routes and stops) after status change
+      const dbRide = await rideService.getRideDetails(rideId)
+      
+      // Transform DB ride info for activeRide state
+      const routeInfo = Array.isArray(dbRide.ride_routes) ? dbRide.ride_routes[0] : dbRide.route // Handle both naming conventions
+      const activeRide: Ride = {
+        id: dbRide.id,
+        name: dbRide.name,
+        description: dbRide.description,
+        status: 'Active',
+        ride_code: dbRide.ride_code,
+        participants: dbRide.participants?.length || 1,
+        max_participants: dbRide.max_participants,
+        community_id: dbRide.community_id,
+        community_name: dbRide.communities?.name || dbRide.community?.name || 'HQ',
+        distance: routeInfo?.distance_km ? `${routeInfo.distance_km} km` : '0 km',
+        estimated_duration: routeInfo?.duration_mins ? `${routeInfo.duration_mins} mins` : '0 mins',
+        start_time: dbRide.start_time,
+        route: routeInfo,
+        stops: dbRide.stops,
+        created_at: dbRide.created_at
+      }
+
       set((state) => ({
+        activeRide,
         rides: state.rides.map(r =>
           r.id === rideId ? { ...r, status: 'Active' as const } : r
         ),

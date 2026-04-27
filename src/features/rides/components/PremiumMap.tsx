@@ -34,6 +34,7 @@ interface PremiumMapProps {
   preloadedRoute?: any // Geometry from DB
   className?: string
   hideControls?: boolean
+  selectionMode?: 'start' | 'end' | 'stop' | null
 }
 
 interface SearchSuggestion {
@@ -153,7 +154,8 @@ export default function PremiumMap({
   markers = [], 
   preloadedRoute,
   className,
-  hideControls = false
+  hideControls = false,
+  selectionMode
 }: PremiumMapProps) {
   const { theme } = useThemeStore()
   const [searchQuery, setSearchQuery] = useState('')
@@ -224,8 +226,14 @@ export default function PremiumMap({
     setSuggestions([])
     setShowSuggestions(false)
     setFlyTarget({ center: [lat, lng], zoom: 15 })
-    setPendingPoint({ lat, lng, name })
-  }, [])
+    
+    if (selectionMode) {
+      const type = selectionMode === 'stop' ? 'fuel' : selectionMode
+      onConfirmPoint?.(lat, lng, type, name)
+    } else {
+      setPendingPoint({ lat, lng, name })
+    }
+  }, [selectionMode, onConfirmPoint])
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -350,18 +358,24 @@ export default function PremiumMap({
 
   const handleMapClick = async (lat: number, lng: number) => {
     if (hideControls) return // Disable interaction in HUD mode
-    setPendingPoint({ lat, lng, name: 'Identifying...' })
+    
+    // Accuracy: Reverse geocode to get real location name
+    let name = 'Selected Location'
     try {
-      // Accuracy: Reverse geocode to get real location name
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
       )
       const data = await response.json()
-      const name = data.display_name?.split(',')[0] || data.name || 'Selected Location'
-      setPendingPoint({ lat, lng, name })
+      name = data.display_name?.split(',')[0] || data.name || 'Selected Location'
     } catch (error) {
       console.error('Reverse geocode failed:', error)
-      setPendingPoint({ lat, lng, name: 'Selected Location' })
+    }
+
+    if (selectionMode) {
+      const type = selectionMode === 'stop' ? 'fuel' : selectionMode // Default stop to fuel or handle specifically
+      onConfirmPoint?.(lat, lng, type, name)
+    } else {
+      setPendingPoint({ lat, lng, name })
     }
   }
 

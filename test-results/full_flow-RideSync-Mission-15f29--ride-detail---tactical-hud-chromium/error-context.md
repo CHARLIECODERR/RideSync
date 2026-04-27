@@ -6,21 +6,24 @@
 
 # Test info
 
-- Name: basic.spec.ts >> basic navigation and ride sync check
-- Location: tests\e2e\basic.spec.ts:3:1
+- Name: full_flow.spec.ts >> RideSync Mission E2E >> complete flow: dashboard -> ride detail -> tactical hud
+- Location: tests\e2e\full_flow.spec.ts:4:3
 
 # Error details
 
 ```
-Error: expect(page).toHaveURL(expected) failed
+Error: expect(locator).toContainText(expected) failed
 
-Expected pattern: /.*rides/
-Received string:  "http://localhost:5173/"
+Locator: locator('h1')
+Expected pattern: /RIDE SYNC/i
 Timeout: 5000ms
+Error: element(s) not found
 
 Call log:
-  - Expect "toHaveURL" with timeout 5000ms
-    9 × unexpected value "http://localhost:5173/"
+  - Expect "toContainText" with timeout 5000ms
+  - waiting for locator('h1')
+    3 × locator resolved to <h1 class="text-5xl md:text-8xl lg:text-[10rem] font-black tracking-tighter leading-[0.85] uppercase italic select-none">…</h1>
+      - unexpected value "SYNC THE RIDE. "
 
 ```
 
@@ -162,31 +165,48 @@ Call log:
 ```ts
   1  | import { test, expect } from '@playwright/test';
   2  | 
-  3  | test('basic navigation and ride sync check', async ({ page }) => {
-  4  |   await page.goto('/');
-  5  | 
-  6  |   // Check if we are on the dashboard
-  7  |   await expect(page).toHaveTitle(/RideSync/);
-  8  |   
-  9  |   // Navigate to Rides
-  10 |   await page.click('text=Rides');
-> 11 |   await expect(page).toHaveURL(/.*rides/);
-     |                      ^ Error: expect(page).toHaveURL(expected) failed
+  3  | test.describe('RideSync Mission E2E', () => {
+  4  |   test('complete flow: dashboard -> ride detail -> tactical hud', async ({ page }) => {
+  5  |     // 1. Visit Dashboard
+  6  |     await page.goto('/');
+> 7  |     await expect(page.locator('h1')).toContainText(/RIDE SYNC/i);
+     |                                      ^ Error: expect(locator).toContainText(expected) failed
+  8  | 
+  9  |     // 2. Navigate to Rides
+  10 |     await page.click('text=Mission Control'); // Assuming sidebar link
+  11 |     await expect(page).toHaveURL(/.*rides/);
   12 | 
-  13 |   // Check if rides are listed
-  14 |   const rideCards = page.locator('.group.rounded-\\[2\\.5rem\\]');
-  15 |   await expect(rideCards).toBeVisible();
-  16 | });
-  17 | 
-  18 | test('check community detail view', async ({ page }) => {
-  19 |   await page.goto('/communities');
-  20 |   
-  21 |   // Click on a community if any
-  22 |   const firstCommunity = page.locator('h3').first();
-  23 |   if (await firstCommunity.isVisible()) {
-  24 |       await firstCommunity.click();
-  25 |       await expect(page.locator('h1')).toBeVisible();
-  26 |   }
-  27 | });
-  28 | 
+  13 |     // 3. View a ride
+  14 |     await page.click('text=View Intel'); // Click on a ride card
+  15 |     await expect(page.locator('h1')).toBeVisible();
+  16 | 
+  17 |     // 4. Start the ride
+  18 |     const startBtn = page.locator('text=Start Ride');
+  19 |     if (await startBtn.isVisible()) {
+  20 |       await startBtn.click();
+  21 |       await expect(page.locator('text=Finish Ride')).toBeVisible();
+  22 |     }
+  23 | 
+  24 |     // 5. Enter Tactical Mode
+  25 |     await page.click('text=Enter Ride Mode');
+  26 |     
+  27 |     // Check HUD elements
+  28 |     await expect(page.locator('text=Speed')).toBeVisible();
+  29 |     await expect(page.locator('text=Abort Ride')).toBeVisible();
+  30 |     
+  31 |     // 6. Exit HUD
+  32 |     await page.click('text=Exit HUD');
+  33 |     await expect(page.locator('text=Enter Ride Mode')).toBeVisible();
+  34 |   });
+  35 | 
+  36 |   test('community exploration', async ({ page }) => {
+  37 |     await page.goto('/communities');
+  38 |     await expect(page.locator('text=Vanguard Groups')).toBeVisible();
+  39 |     
+  40 |     // Click on a community
+  41 |     await page.click('text=View Sector');
+  42 |     await expect(page.locator('button:has-text("Join Community")')).toBeVisible();
+  43 |   });
+  44 | });
+  45 | 
 ```
