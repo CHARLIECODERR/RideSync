@@ -66,6 +66,7 @@ CREATE TABLE public.communities (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
+  join_code TEXT UNIQUE,
   created_by UUID REFERENCES public.profiles ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
