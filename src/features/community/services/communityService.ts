@@ -83,7 +83,7 @@ export const communityService = {
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Authorized')
 
-    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const joinCode = crypto.randomUUID().split('-')[0].toUpperCase()
 
     // 1. Create community (Trigger on_community_created will add creator as Admin)
     const { data, error } = await supabase
@@ -99,7 +99,7 @@ export const communityService = {
 
     if (error) {
       console.error('Supabase Create Community Error:', error)
-      throw error
+      throw new Error(`Database Conflict: ${error.message}. Please try a different name or refresh.`)
     }
     return data as Community
   },
