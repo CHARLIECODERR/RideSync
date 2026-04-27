@@ -45,9 +45,13 @@ export default function JoinPage() {
     try {
       if (targetType === 'ride') {
         const ride = await joinRide(targetCode)
-        setResultData(ride)
-        setStatus('success')
-        setTimeout(() => navigate(`/ride/${ride.id}`), 2000)
+        if (ride) {
+          setResultData(ride)
+          setStatus('success')
+          setTimeout(() => navigate(`/ride/${ride.id}`), 2000)
+        } else {
+          throw new Error('Ride authentication failed. Intel not found.')
+        }
       } else {
         const community = await joinByCode(targetCode)
         if (community) {
@@ -55,7 +59,7 @@ export default function JoinPage() {
           setStatus('success')
           setTimeout(() => navigate(`/communities/${community.id}`), 2000)
         } else {
-          throw new Error('Community identification failed')
+          throw new Error('Community identification failed. Brotherhood not found.')
         }
       }
     } catch (err: any) {

@@ -24,8 +24,8 @@ export default function TacticalRideView() {
 
   // Auto-fullscreen request on component mount (browser permitting)
   useEffect(() => {
-    if (document.documentElement.requestFullscreen) {
-      // document.documentElement.requestFullscreen().catch(() => {})
+    if (typeof document.documentElement.requestFullscreen === 'function') {
+      // Auto-fullscreen is often blocked by browsers without user interaction
     }
   }, [])
 

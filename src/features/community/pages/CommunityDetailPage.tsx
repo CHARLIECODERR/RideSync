@@ -230,7 +230,7 @@ export default function CommunityDetailPage() {
                     </div>
                     <h4 className="text-xl font-black uppercase italic group-hover:text-saffron transition-colors">{ride.name}</h4>
                     <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-black text-white/40 uppercase tracking-widest">
-                      <span>{ride.route?.distance_km || 0} KM • {ride._count?.participants || 0} RIDERS</span>
+                      <span>{ride.route?.distance_km || 0} KM • {ride.participants || 0} RIDERS</span>
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </div>
 
