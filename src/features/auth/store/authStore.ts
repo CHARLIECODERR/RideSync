@@ -118,7 +118,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     if (data.user) {
-      const profile = await authService.createProfile(data.user.id, name, email)
+      // The profile is automatically created by the DB trigger 'on_auth_user_created'.
+      // We simply fetch the existing account intel to update our local session.
+      const profile = await authService.getProfile(data.user.id)
       set({ user: profile, isAuthenticated: true, isLoading: false })
       return true
     }
