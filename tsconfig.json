@@ -20,7 +20,7 @@
       "@/*": ["./src/*"]
     },
     "ignoreDeprecations": "6.0",
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node", "vite/client"]
   },
   "include": ["src", "tests"],
   "references": [{ "path": "./tsconfig.node.json" }]

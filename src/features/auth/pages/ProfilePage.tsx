@@ -130,7 +130,7 @@ export default function ProfilePage() {
                    <div key={ride.id} className="p-6 bg-zinc-950/50 border border-white/5 flex items-center justify-between group hover:bg-white/5 transition-all">
                       <div className="space-y-1">
                          <h4 className="text-sm font-black uppercase italic tracking-widest group-hover:text-saffron transition-colors">{ride.name}</h4>
-                         <p className="text-[10px] font-bold text-white/20 uppercase">{ride.status} • {ride.distance_km || 0} KM</p>
+                         <p className="text-[10px] font-bold text-white/20 uppercase">{ride.status} • {ride.distance || '0 KM'}</p>
                       </div>
                       <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">
                          {new Date(ride.start_time).toLocaleDateString()}
