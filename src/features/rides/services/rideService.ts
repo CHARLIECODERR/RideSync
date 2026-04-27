@@ -179,15 +179,25 @@ export const rideService = {
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) throw new Error('Unauthorized')
 
+    // Find the ride first to get its ID
+    const { data: ride, error: findError } = await supabase
+      .from('rides')
+      .select('id')
+      .eq('ride_code', code)
+      .single()
+
+    if (findError || !ride) throw new Error('Mission not found or intel corrupted.')
+
     const { error } = await supabase
       .from('ride_participants')
       .insert([{
-        ride_id: rideId,
+        ride_id: ride.id,
         user_id: userData.user.id,
         role: 'Rider'
       }])
 
     if (error) throw error
+    return ride
   },
 
   async updateRideStatus(rideId: string, status: 'Planned' | 'Active' | 'Completed' | 'Cancelled') {
